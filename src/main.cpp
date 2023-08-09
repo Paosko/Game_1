@@ -2,9 +2,18 @@
 #include <TFT_eSPI.h>
 #include <ui.h>
 #include <esp_task_wdt.h>
+#include <BLEDevice.h>
 
 
 static SemaphoreHandle_t mutex;
+
+#define ServerName  "Utopia 360 Remote"      // change this if your server uses a different name
+static BLEUUID serviceUUID("00001812-0000-1000-8000-00805f9b34fb");
+static BLEAdvertisedDevice* myDevice;
+BLEClient*  pClient  = BLEDevice::createClient();
+static boolean doConnect = false;
+static boolean connected = false;
+static boolean doScan = false;
 
 
 /*Don't forget to set Sketchbook location in File/Preferencesto the path of your UI project (the parent foder of this INO file)*/
@@ -113,49 +122,6 @@ void lv_timer_han(void *param)
         {
             Serial.print("Wait for Mutex LV_up");
         }
-        //Serial.print("task Executed");
-        // vTaskDelay(5);
-
-
-
-        // if(cnt==0 && millis()>5000)
-        // {   cnt++;
-        //     char str[20];
-        //     sprintf(str,"xTaskGetTickCount:%d\n",xTaskGetTickCount());
-        //     Serial.print(str);
-        //     lv_event_t *ev=new lv_event_t();
-        //     ev->code=LV_EVENT_PRESSED;
-        //     ev->target=ui_Clock;
-
-        //     ui_event_Clock(ev);
-        //     Serial.print("Clicked 1");
-
-        //     sprintf(str, "Task is running on the core: %d, \n\0",xPortGetCoreID());
-        //     Serial.print(str);
-
-        //     sprintf(str,"xTaskGetTickCount:%i \n\0",xTaskGetTickCount());
-        //     Serial.print(str);
-
-        // }
-
-        // if(cnt==1 && millis()>10000)
-        // {
-        //     lv_event_t *ev=new lv_event_t();
-        //     ev->code=LV_EVENT_PRESSED;
-        //     ev->target=ui_Call;
-        //     Serial.print("Clicked 2");
-        //     ui_event_Call(ev);
-
-        //     cnt++;
-        // }
-
-
-
-    //    Serial.print(xTaskGetTickCount());
-    //    Serial.print(", ");
-    //    Serial.print(millis());
-    //    Serial.print(" \n");
-    //Serial.print("-");
     }
 
 }
@@ -177,7 +143,7 @@ void lv_exec(void *param)
     for(;;)
     {
         
-        vTaskDelay(500);
+        vTaskDelay(1000);
         Serial.println(xPortGetFreeHeapSize());
         if(cnt==0 && millis()>5000)
         {   cnt++;
@@ -237,21 +203,94 @@ void lv_exec(void *param)
     }
 }
 
+class MyAdvertisedDeviceCallbacks: public BLEAdvertisedDeviceCallbacks
+{
+    void onResult(BLEAdvertisedDevice advertisedDevice)
+  {
+    Serial.print("BLE Advertised Device found: ");
+    Serial.println(advertisedDevice.toString().c_str());
+    if (advertisedDevice.haveName())
+    {
+      if (0 == strcmp(ServerName, advertisedDevice.getName().c_str()))
+      {
+        Serial.println("Found VRBOX Server");
+
+        // we found a server with the correct name, see if it has the service we are
+        // interested in (HID)
+  
+        if (advertisedDevice.haveServiceUUID() && advertisedDevice.isAdvertisingService(serviceUUID))
+        {
+          Serial.println("Server has HID service -> BLE STOP SCAN");
+          
+          BLEDevice::getScan()->stop();
+          
+    
+          myDevice = new BLEAdvertisedDevice(advertisedDevice);
+          doConnect = true;
+          doScan = true;
+        } // Found our server
+        else
+        {
+          Serial.println("Server does not have an HID service, not our server");
+        }
+      }
+    }
+    else
+    {
+     // Serial.println("Server name does not match, not our server");
+    }
+  }
+};
+
+//******************************************************************************
+// Connection state change event callback handler.
+//******************************************************************************
+class MyClientCallback : public BLEClientCallbacks
+{
+  void onConnect(BLEClient* pclient)
+  {
+    Serial.println("onConnect event");
+  }
+
+  void onDisconnect(BLEClient* pclient)
+  {
+    Serial.println("onDisconnect event");
+    connected = false;
+  }
+
+
+};
+bool connectToServer()
+{
+    pClient->connect(myDevice); 
+}
+
 void nejakaF(void * param)
-{   
-    Serial.print("I am in the function");
+{   BLEDevice::init("HRA");
+    BLEScan* pBLEScan = BLEDevice::getScan();
+    pBLEScan->setAdvertisedDeviceCallbacks(new MyAdvertisedDeviceCallbacks());
+    pBLEScan->setInterval(5000);
+    pBLEScan->setWindow(500);
+    pBLEScan->setActiveScan(true);
+    pBLEScan->start(5, false);      // scan for 5 seconds
+    pClient->setClientCallbacks(new MyClientCallback());
+    Serial.print("Bluetooth Init");
     int cnt=0;
     for(;;)
     {
-        Serial.print("Kurva!!!!");
-        vTaskDelay(50/portTICK_PERIOD_MS);
+        if(doConnect)
+        {
+            Serial.print("DoConnect: True, ConnectToServer: ");
+            Serial.println(connectToServer());
+        }
+        vTaskDelay(500/portTICK_PERIOD_MS);
     }
 }
 
 void setup()
 {
     Serial.begin( 115200 ); /* prepare for possible serial debug */
-
+    
     String LVGL_Arduino = "Hello Arduino! ";
     LVGL_Arduino += String('V') + lv_version_major() + "." + lv_version_minor() + "." + lv_version_patch();
 
@@ -262,11 +301,10 @@ void setup()
     //
 
     mutex=xSemaphoreCreateMutex();
-    xTaskCreatePinnedToCore(lv_timer_han,"lv_timer_handler",10024,NULL,2,NULL,1);
+    xTaskCreatePinnedToCore(lv_timer_han,"lv_timer_handler",10024,NULL,23,NULL,tskNO_AFFINITY);
     xTaskCreatePinnedToCore(lv_exec,"lv_exec",5024,NULL,3,NULL,1);
-    //xTaskCreatePinnedToCore(nejakaF,"NejakaskurvenaFCIA",1024,NULL,1,NULL,1);
-    //xTaskCreate(lv_exec,"lv_exec",100024,NULL,3,NULL);
-    //xTaskCreatePinnedToCore(Wdt_reset,"watchdog",1024,NULL,1,NULL,0);
+    xTaskCreatePinnedToCore(nejakaF,"NejakaskurvenaFCIA",10024,NULL,1,NULL,0);
+
     Serial.println( "Setup done" );
 
 

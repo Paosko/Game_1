@@ -3,6 +3,10 @@
 #include <ui.h>
 #include <esp_task_wdt.h>
 
+
+static SemaphoreHandle_t mutex;
+
+
 /*Don't forget to set Sketchbook location in File/Preferencesto the path of your UI project (the parent foder of this INO file)*/
 
 /*Change to your screen resolution*/
@@ -99,46 +103,61 @@ void lv_timer_han(void *param)
     for(;;)
     {
         //taskYIELD();
-        lv_timer_handler();
-        vTaskDelay(50);
+        if(xSemaphoreTake(mutex,0)==pdTRUE)
+        {
+            lv_timer_handler();
+            xSemaphoreGive(mutex);
+            vTaskDelay(50);
+        }
+        else
+        {
+            Serial.print("Wait for Mutex LV_up");
+        }
         //Serial.print("task Executed");
         // vTaskDelay(5);
-          if(cnt==0 && millis()>5000)
-        {   cnt++;
-            char str[20];
-            sprintf(str,"xTaskGetTickCount:%d\n",xTaskGetTickCount());
-            Serial.print(str);
-            lv_event_t *ev=new lv_event_t();
-            ev->code=LV_EVENT_PRESSED;
-            ev->target=ui_Clock;
 
-            ui_event_Clock(ev);
-            Serial.print("Clicked 1");
-            
-            sprintf(str, "Task is running on the core: %d, \n\0",xPortGetCoreID());
-            Serial.print(str);
 
-            sprintf(str,"xTaskGetTickCount:%i \n\0",xTaskGetTickCount());
-            Serial.print(str);
-           
-        }
 
-        if(cnt==1 && millis()>10000)
-        {
-            lv_event_t *ev=new lv_event_t();
-            ev->code=LV_EVENT_PRESSED;
-            ev->target=ui_Call;
-            Serial.print("Clicked 2");  
-            ui_event_Call(ev);
-            
-            cnt++;
-        }
+        // if(cnt==0 && millis()>5000)
+        // {   cnt++;
+        //     char str[20];
+        //     sprintf(str,"xTaskGetTickCount:%d\n",xTaskGetTickCount());
+        //     Serial.print(str);
+        //     lv_event_t *ev=new lv_event_t();
+        //     ev->code=LV_EVENT_PRESSED;
+        //     ev->target=ui_Clock;
+
+        //     ui_event_Clock(ev);
+        //     Serial.print("Clicked 1");
+
+        //     sprintf(str, "Task is running on the core: %d, \n\0",xPortGetCoreID());
+        //     Serial.print(str);
+
+        //     sprintf(str,"xTaskGetTickCount:%i \n\0",xTaskGetTickCount());
+        //     Serial.print(str);
+
+        // }
+
+        // if(cnt==1 && millis()>10000)
+        // {
+        //     lv_event_t *ev=new lv_event_t();
+        //     ev->code=LV_EVENT_PRESSED;
+        //     ev->target=ui_Call;
+        //     Serial.print("Clicked 2");
+        //     ui_event_Call(ev);
+
+        //     cnt++;
+        // }
+
+
+
     //    Serial.print(xTaskGetTickCount());
     //    Serial.print(", ");
     //    Serial.print(millis());
     //    Serial.print(" \n");
+    //Serial.print("-");
     }
-   
+
 }
 
 void Wdt_reset(void *param)
@@ -154,39 +173,80 @@ void lv_exec(void *param)
 {
  //   static int cnt=0;
     Serial.print("I am in the function");
+    int cnt=0;
     for(;;)
     {
         
-        vTaskDelay(50);
-        for(int x=0;x<200;x++)
-        {asm("nop");}
-        Serial.print("*");
-            /*
-
-        if(cnt==0 && xTaskGetTickCount()>5000)
-        {
+        vTaskDelay(500);
+        Serial.println(xPortGetFreeHeapSize());
+        if(cnt==0 && millis()>5000)
+        {   cnt++;
+            char str[20];
+            sprintf(str,"xTaskGetTickCount:%d\n",xTaskGetTickCount());
+            Serial.print(str);
             lv_event_t *ev=new lv_event_t();
             ev->code=LV_EVENT_PRESSED;
             ev->target=ui_Clock;
 
             ui_event_Clock(ev);
             Serial.print("Clicked 1");
-            cnt++;
+
+            sprintf(str, "Task is running on the core: %d, \n\0",xPortGetCoreID());
+            Serial.print(str);
+
+            sprintf(str,"xTaskGetTickCount:%i \n\0",xTaskGetTickCount());
+            Serial.print(str);
+
         }
 
-        if(cnt==1 && xTaskGetTickCount()>10000)
+        if(cnt==1 && millis()>10000)
         {
             lv_event_t *ev=new lv_event_t();
-            ev->code=LV_EVENT_SCREEN_LOAD_START;
+            ev->code=LV_EVENT_PRESSED;
             ev->target=ui_Call;
-
-            ui_event_Clock(ev);
             Serial.print("Clicked 2");
-            cnt++;
-        }//*/
+            if(xSemaphoreTake(mutex,0)==pdTRUE)
+            {
+                ui_event_Call(ev);
+                cnt++;
+                xSemaphoreGive(mutex);
+            }
+            else
+            {
+                Serial.print("Wait for Mutex");
+            }
+        }
+
+        if(cnt==2 && millis()>15000)
+        {
+            lv_event_t *ev=new lv_event_t();
+            ev->code=LV_EVENT_LEAVE;
+            ev->target=ui_Call;
+            Serial.print("Clicked 3");
+            if(xSemaphoreTake(mutex,0)==pdTRUE)
+            {
+                ui_event_Call(ev);
+                cnt++;
+                xSemaphoreGive(mutex);
+            }
+            else
+            {
+                Serial.print("Wait for Mutex");
+            }
+        }
     }
 }
 
+void nejakaF(void * param)
+{   
+    Serial.print("I am in the function");
+    int cnt=0;
+    for(;;)
+    {
+        Serial.print("Kurva!!!!");
+        vTaskDelay(50/portTICK_PERIOD_MS);
+    }
+}
 
 void setup()
 {
@@ -198,22 +258,25 @@ void setup()
     Serial.println( LVGL_Arduino );
     Serial.println( "I am LVGL_Arduino" );
 
-    
-    //
-  
 
-    xTaskCreatePinnedToCore(lv_timer_han,"lv_timer_handler",100024,NULL,1,NULL,1);
-    xTaskCreatePinnedToCore(lv_exec,"lv_exec",1024,NULL,1,NULL,1);
+    //
+
+    mutex=xSemaphoreCreateMutex();
+    xTaskCreatePinnedToCore(lv_timer_han,"lv_timer_handler",10024,NULL,2,NULL,1);
+    xTaskCreatePinnedToCore(lv_exec,"lv_exec",5024,NULL,3,NULL,1);
+    //xTaskCreatePinnedToCore(nejakaF,"NejakaskurvenaFCIA",1024,NULL,1,NULL,1);
+    //xTaskCreate(lv_exec,"lv_exec",100024,NULL,3,NULL);
     //xTaskCreatePinnedToCore(Wdt_reset,"watchdog",1024,NULL,1,NULL,0);
     Serial.println( "Setup done" );
 
-    
+
 }
 
 void loop()
 {
     //lv_timer_handler(); /* let the GUI do its work */
-    vTaskDelay(5);
-   
+    vTaskDelay(50);
+    //Serial.print(uxTaskPriorityGet(NULL));
+
 }
 

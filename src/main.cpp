@@ -176,9 +176,10 @@ void lv_exec(void *param)
     int cnt=0;
     for(;;)
     {
-        
-        vTaskDelay(500);
+        Serial.print("Heap:");
         Serial.println(xPortGetFreeHeapSize());
+        vTaskDelay(1000);
+        
         if(cnt==0 && millis()>5000)
         {   cnt++;
             char str[20];
@@ -190,12 +191,6 @@ void lv_exec(void *param)
 
             ui_event_Clock(ev);
             Serial.print("Clicked 1");
-
-            sprintf(str, "Task is running on the core: %d, \n\0",xPortGetCoreID());
-            Serial.print(str);
-
-            sprintf(str,"xTaskGetTickCount:%i \n\0",xTaskGetTickCount());
-            Serial.print(str);
 
         }
 
@@ -251,7 +246,8 @@ void nejakaF(void * param)
 void setup()
 {
     Serial.begin( 115200 ); /* prepare for possible serial debug */
-
+    Serial.print("Init Heap:");
+    Serial.println(xPortGetFreeHeapSize());
     String LVGL_Arduino = "Hello Arduino! ";
     LVGL_Arduino += String('V') + lv_version_major() + "." + lv_version_minor() + "." + lv_version_patch();
 

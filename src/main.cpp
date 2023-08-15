@@ -1,19 +1,13 @@
 #include <lvgl.h>
 #include <TFT_eSPI.h>
 #include <ui.h>
-#include <esp_task_wdt.h>
-#include <BLEDevice.h>
+//#include <esp_task_wdt.h>
+//#include <BLEDevice.h>
 
 
 static SemaphoreHandle_t mutex;
 
-#define ServerName  "Utopia 360 Remote"      // change this if your server uses a different name
-static BLEUUID serviceUUID("00001812-0000-1000-8000-00805f9b34fb");
-static BLEAdvertisedDevice* myDevice;
-BLEClient*  pClient  = BLEDevice::createClient();
-static boolean doConnect = false;
-static boolean connected = false;
-static boolean doScan = false;
+
 
 
 /*Don't forget to set Sketchbook location in File/Preferencesto the path of your UI project (the parent foder of this INO file)*/
@@ -126,15 +120,6 @@ void lv_timer_han(void *param)
 
 }
 
-void Wdt_reset(void *param)
-{
-    for(;;)
-    {
-        esp_task_wdt_reset();
-        vTaskDelay(50);
-    }
-}
-
 void lv_exec(void *param)
 {
  //   static int cnt=0;
@@ -203,90 +188,6 @@ void lv_exec(void *param)
     }
 }
 
-class MyAdvertisedDeviceCallbacks: public BLEAdvertisedDeviceCallbacks
-{
-    void onResult(BLEAdvertisedDevice advertisedDevice)
-  {
-    Serial.print("BLE Advertised Device found: ");
-    Serial.println(advertisedDevice.toString().c_str());
-    if (advertisedDevice.haveName())
-    {
-      if (0 == strcmp(ServerName, advertisedDevice.getName().c_str()))
-      {
-        Serial.println("Found VRBOX Server");
-
-        // we found a server with the correct name, see if it has the service we are
-        // interested in (HID)
-  
-        if (advertisedDevice.haveServiceUUID() && advertisedDevice.isAdvertisingService(serviceUUID))
-        {
-          Serial.println("Server has HID service -> BLE STOP SCAN");
-          
-          BLEDevice::getScan()->stop();
-          
-    
-          myDevice = new BLEAdvertisedDevice(advertisedDevice);
-          doConnect = true;
-          doScan = true;
-        } // Found our server
-        else
-        {
-          Serial.println("Server does not have an HID service, not our server");
-        }
-      }
-    }
-    else
-    {
-     // Serial.println("Server name does not match, not our server");
-    }
-  }
-};
-
-//******************************************************************************
-// Connection state change event callback handler.
-//******************************************************************************
-class MyClientCallback : public BLEClientCallbacks
-{
-  void onConnect(BLEClient* pclient)
-  {
-    Serial.println("onConnect event");
-  }
-
-  void onDisconnect(BLEClient* pclient)
-  {
-    Serial.println("onDisconnect event");
-    connected = false;
-  }
-
-
-};
-bool connectToServer()
-{
-    pClient->connect(myDevice); 
-}
-
-void nejakaF(void * param)
-{   BLEDevice::init("HRA");
-    BLEScan* pBLEScan = BLEDevice::getScan();
-    pBLEScan->setAdvertisedDeviceCallbacks(new MyAdvertisedDeviceCallbacks());
-    pBLEScan->setInterval(5000);
-    pBLEScan->setWindow(500);
-    pBLEScan->setActiveScan(true);
-    pBLEScan->start(5, false);      // scan for 5 seconds
-    pClient->setClientCallbacks(new MyClientCallback());
-    Serial.print("Bluetooth Init");
-    int cnt=0;
-    for(;;)
-    {
-        if(doConnect)
-        {
-            Serial.print("DoConnect: True, ConnectToServer: ");
-            Serial.println(connectToServer());
-        }
-        vTaskDelay(500/portTICK_PERIOD_MS);
-    }
-}
-
 void setup()
 {
     Serial.begin( 115200 ); /* prepare for possible serial debug */
@@ -303,8 +204,7 @@ void setup()
     mutex=xSemaphoreCreateMutex();
     xTaskCreatePinnedToCore(lv_timer_han,"lv_timer_handler",10024,NULL,23,NULL,tskNO_AFFINITY);
     xTaskCreatePinnedToCore(lv_exec,"lv_exec",5024,NULL,3,NULL,1);
-    xTaskCreatePinnedToCore(nejakaF,"NejakaskurvenaFCIA",10024,NULL,1,NULL,0);
-
+    
     Serial.println( "Setup done" );
 
 

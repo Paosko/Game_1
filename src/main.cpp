@@ -3,20 +3,157 @@
 #include <ui.h>
 #include <esp_task_wdt.h>
 #include <BLEDevice.h>
+#include <soc/rtc_wdt.h>
+
 
 
 static SemaphoreHandle_t mutex;
-
-#define ServerName  "Utopia 360 Remote"      // change this if your server uses a different name
-static BLEUUID serviceUUID("00001812-0000-1000-8000-00805f9b34fb");
-static BLEAdvertisedDevice* myDevice;
-BLEClient*  pClient  = BLEDevice::createClient();
-static boolean doConnect = false;
-static boolean connected = false;
-static boolean doScan = false;
+TaskHandle_t LCDTask;
+TaskHandle_t BleTask;
 
 
-/*Don't forget to set Sketchbook location in File/Preferencesto the path of your UI project (the parent foder of this INO file)*/
+#define bleServerName "Utopia 360 Remote"
+
+
+
+static BLEUUID bmeServiceUUID("00001812-0000-1000-8000-00805f9b34fb");
+
+// BLE Characteristics
+static BLEUUID JoystickCharacteristicUUID("00002a4d-0000-1000-8000-00805f9b34fb");
+
+// Battery Characteristic
+static BLEUUID BatteryCharacteristicUUID("0000180F-0000-1000-8000-00805f9b34fb");
+
+//Flags stating if should begin connecting and if the connection is up
+static bool doConnect = false;
+static bool connected = false;
+
+//Address of the peripheral device. Address will be found during scanning...
+static BLEAddress *pServerAddress;
+ 
+//Characteristicd that we want to read
+static BLERemoteCharacteristic* JoystickCharacteristic;
+static BLERemoteCharacteristic* BatteryCharacteristic;
+BLEClient* pClient;
+std::map<std::uint16_t, BLERemoteCharacteristic*> *pRemoteCharacteristic;
+std::map<std::uint16_t, BLERemoteCharacteristic*> :: iterator itrbh;
+
+
+//Variables to store Joystick and Battery
+char* JoystickChar;
+char* BatteryChar;
+
+//Flags to check whether new Joystick and Battery readings are available
+bool newJoystick = false;
+bool newBattery = false;
+
+
+//When the BLE Server sends a new Joystick reading with the notify property
+static void JoystickNotifyCallback(BLERemoteCharacteristic* pBLERemoteCharacteristic, 
+                                        uint8_t* pData, size_t length, bool isNotify) {
+                                          
+  //store Joystick value
+  JoystickChar = (char*)pData;
+  newJoystick = true;
+   for (int i = 0; i < length; i++)
+    Serial.printf("%02X ", pData[i]);
+  Serial.println();
+}
+
+//When the BLE Server sends a new Battery reading with the notify property
+static void BatteryNotifyCallback(BLERemoteCharacteristic* pBLERemoteCharacteristic, 
+                                    uint8_t* pData, size_t length, bool isNotify) {
+  //store Battery value
+  BatteryChar = (char*)pData;
+  newBattery = true;
+  Serial.print(newBattery);
+}
+
+
+
+//Connect to the BLE Server that has the name, Service, and Characteristics
+bool connectToServer(BLEAddress pAddress) {
+  pClient = BLEDevice::createClient();
+ 
+  // Connect to the remove BLE Server.
+  pClient->connect(pAddress);
+  Serial.println(" - Connected to server");
+  
+  std::map<std::string, BLERemoteService*> *pRemoteServices = pClient->getServices();
+  Serial.print("Nb of services: "); Serial.println(pRemoteServices->size());
+
+  for(auto it = pRemoteServices->cbegin(); it != pRemoteServices->cend(); ++it)
+{
+
+  Serial.printf("first: %s second.getUUID:%s, second.tostring:%s\n",it->first.c_str(),it->second->getUUID().toString().c_str(),it->second->toString().c_str());
+
+  //  std::cout << it->first << " " << it->second.first << " " << it->second.second << "\n";
+}
+ 
+  // Obtain a reference to the service we are after in the remote BLE server.
+  BLERemoteService* pRemoteService = pClient->getService(bmeServiceUUID);
+  if (pRemoteService == nullptr) {
+    Serial.print("Failed to find our service UUID: ");
+    Serial.println(bmeServiceUUID.toString().c_str());
+    return (false);
+  }
+
+  pRemoteCharacteristic=pRemoteService->getCharacteristicsByHandle();
+
+  for( itrbh = pRemoteCharacteristic->begin(); itrbh != pRemoteCharacteristic->end(); ++itrbh)
+  {
+    
+    Serial.printf("pRemoteCharacteristic: first: %d second.getUUID:%s, second.tostring:%s\n",itrbh->first,itrbh->second->getUUID().toString().c_str(),itrbh->second->toString().c_str());
+    if (JoystickCharacteristicUUID.equals (itrbh->second->getUUID()))
+    {
+      if (itrbh->second->canNotify())
+      {
+         itrbh->second->registerForNotify(JoystickNotifyCallback);
+         Serial.println("Registered notifyCallback from itrbh");
+      }
+    }
+  }
+  
+ 
+  // Obtain a reference to the characteristics in the service of the remote BLE server.
+  //JoystickCharacteristic = pRemoteService->getCharacteristic(JoystickCharacteristicUUID);
+  //BatteryCharacteristic = pRemoteService->getCharacteristic(BatteryCharacteristicUUID);
+/*
+  if (JoystickCharacteristic == nullptr) {
+    Serial.print("Failed to find JoystickCharacteristic UUID");
+    return false;
+  }
+/*
+  if ( BatteryCharacteristic == nullptr) {
+    Serial.print("Failed to find BatteryCharacteristic UUID");
+    return false;
+  }
+  Serial.println(" - Found our characteristics");
+ *\/
+  //Assign callback functions for the Characteristics
+  Serial.printf("JoystickCharacteristic can notify:%d\n",JoystickCharacteristic->canNotify());
+  
+  JoystickCharacteristic->registerForNotify(JoystickNotifyCallback);
+  Serial.printf("Joystick ReadRawData:%02X\n",JoystickCharacteristic->readRawData());
+  Serial.printf("Joystick Handle:%d\n",JoystickCharacteristic->getHandle());
+    Serial.printf("Joystick Client :%d\n",JoystickCharacteristic->getRemoteService()->getClient()->toString().c_str());
+  //BatteryCharacteristic->registerForNotify(BatteryNotifyCallback);
+  */
+  return true;
+}
+
+//Callback function that gets called, when another device's advertisement has been received
+class MyAdvertisedDeviceCallbacks: public BLEAdvertisedDeviceCallbacks {
+  void onResult(BLEAdvertisedDevice advertisedDevice) {
+    Serial.printf("AdvertisedDevice:%s\n",advertisedDevice.getName().c_str());
+    if (advertisedDevice.getName() == bleServerName) { //Check if the name of the advertiser matches
+      advertisedDevice.getScan()->stop(); //Scan can be stopped, we found what we are looking for
+      pServerAddress = new BLEAddress(advertisedDevice.getAddress()); //Address of advertiser is the one we need
+      doConnect = true; //Set indicator, stating that we are ready to connect
+      Serial.println("Device found. Connecting!");
+    }
+  }
+};
 
 /*Change to your screen resolution*/
 static const uint16_t screenWidth  = 480;
@@ -109,19 +246,17 @@ void lv_timer_han(void *param)
 
     ui_init();
     int cnt=0;
+    TickType_t xLastWakeTime=xTaskGetTickCount();
     for(;;)
     {
         //taskYIELD();
-        if(xSemaphoreTake(mutex,0)==pdTRUE)
-        {
-            lv_timer_handler();
-            xSemaphoreGive(mutex);
-            vTaskDelay(50);
-        }
-        else
-        {
-            Serial.print("Wait for Mutex LV_up");
-        }
+
+            //Serial.printf("LV time handler needs to be called:%d\n",);
+            uint32_t tmp=lv_timer_handler();
+            if(tmp<=0)
+            tmp=1;
+            vTaskDelayUntil(&xLastWakeTime,(TickType_t)tmp);
+
     }
 
 }
@@ -138,13 +273,33 @@ void Wdt_reset(void *param)
 void lv_exec(void *param)
 {
  //   static int cnt=0;
-    Serial.print("I am in the function");
+ Serial.printf("Init used Stack in task lv_exec:%d\n",uxTaskGetStackHighWaterMark(NULL));
+    
     int cnt=0;
     for(;;)
     {
         
-        vTaskDelay(1000);
+        
+        Serial.print("Stack in task lv_exec:");
+        Serial.println(uxTaskGetStackHighWaterMark(NULL));
+        Serial.print("Free Heap:");
         Serial.println(xPortGetFreeHeapSize());
+
+
+        Serial.print("Stack in task BleTask:");
+        Serial.println(uxTaskGetStackHighWaterMark(BleTask));
+
+        Serial.print("Stack in task LCDTask:");
+        Serial.println(uxTaskGetStackHighWaterMark(LCDTask));
+
+        
+        Serial.printf("Mun of tasks:%d\n",uxTaskGetNumberOfTasks());
+
+
+
+        vTaskDelay(1000);
+
+        
         if(cnt==0 && millis()>5000)
         {   cnt++;
             char str[20];
@@ -157,10 +312,11 @@ void lv_exec(void *param)
             ui_event_Clock(ev);
             Serial.print("Clicked 1");
 
-            sprintf(str, "Task is running on the core: %d, \n\0",xPortGetCoreID());
+            sprintf(str, "Task is running on the core: %d\n",xPortGetCoreID());
+            
             Serial.print(str);
 
-            sprintf(str,"xTaskGetTickCount:%i \n\0",xTaskGetTickCount());
+            sprintf(str,"xTaskGetTickCount:%i\n",xTaskGetTickCount());
             Serial.print(str);
 
         }
@@ -203,94 +359,47 @@ void lv_exec(void *param)
     }
 }
 
-class MyAdvertisedDeviceCallbacks: public BLEAdvertisedDeviceCallbacks
-{
-    void onResult(BLEAdvertisedDevice advertisedDevice)
+
+
+void MyBluetooth(void * param)
+{   
+
+  BLEDevice::init("");
+ 
+  // Retrieve a Scanner and set the callback we want to use to be informed when we
+  // have detected a new device.  Specify that we want active scanning and start the
+  // scan to run for 30 seconds.
+  BLEScan* pBLEScan = BLEDevice::getScan();
+  pBLEScan->setAdvertisedDeviceCallbacks(new MyAdvertisedDeviceCallbacks());
+  pBLEScan->setActiveScan(true);
+  pBLEScan->start(30);
+  for(;;)
   {
-    Serial.print("BLE Advertised Device found: ");
-    Serial.println(advertisedDevice.toString().c_str());
-    if (advertisedDevice.haveName())
-    {
-      if (0 == strcmp(ServerName, advertisedDevice.getName().c_str()))
-      {
-        Serial.println("Found VRBOX Server");
-
-        // we found a server with the correct name, see if it has the service we are
-        // interested in (HID)
-  
-        if (advertisedDevice.haveServiceUUID() && advertisedDevice.isAdvertisingService(serviceUUID))
-        {
-          Serial.println("Server has HID service -> BLE STOP SCAN");
-          
-          BLEDevice::getScan()->stop();
-          
-    
-          myDevice = new BLEAdvertisedDevice(advertisedDevice);
-          doConnect = true;
-          doScan = true;
-        } // Found our server
-        else
-        {
-          Serial.println("Server does not have an HID service, not our server");
-        }
-      }
+    vTaskDelay(500);
+    if (doConnect == true) {
+    Serial.printf("Start connecting to %s\n",pServerAddress->toString());
+    if (connectToServer(*pServerAddress)) {
+      Serial.println("We are now connected to the BLE Server.");
+      //Activate the Notify property of each Characteristic
+      //JoystickCharacteristic->getDescriptor(BLEUUID((uint16_t)0x2902))->writeValue((uint8_t*)notificationOn, 2, true);
+      //BatteryCharacteristic->getDescriptor(BLEUUID((uint16_t)0x2902))->writeValue((uint8_t*)notificationOn, 2, true);
+      connected = true;
+    } else {
+      Serial.println("We have failed to connect to the server; Restart your device to scan for nearby BLE server again.");
     }
-    else
-    {
-     // Serial.println("Server name does not match, not our server");
-    }
+    doConnect = false;
   }
-};
-
-//******************************************************************************
-// Connection state change event callback handler.
-//******************************************************************************
-class MyClientCallback : public BLEClientCallbacks
-{
-  void onConnect(BLEClient* pclient)
-  {
-    Serial.println("onConnect event");
   }
-
-  void onDisconnect(BLEClient* pclient)
-  {
-    Serial.println("onDisconnect event");
-    connected = false;
-  }
-
-
-};
-bool connectToServer()
-{
-    pClient->connect(myDevice); 
-}
-
-void nejakaF(void * param)
-{   BLEDevice::init("HRA");
-    BLEScan* pBLEScan = BLEDevice::getScan();
-    pBLEScan->setAdvertisedDeviceCallbacks(new MyAdvertisedDeviceCallbacks());
-    pBLEScan->setInterval(5000);
-    pBLEScan->setWindow(500);
-    pBLEScan->setActiveScan(true);
-    pBLEScan->start(5, false);      // scan for 5 seconds
-    pClient->setClientCallbacks(new MyClientCallback());
-    Serial.print("Bluetooth Init");
-    int cnt=0;
-    for(;;)
-    {
-        if(doConnect)
-        {
-            Serial.print("DoConnect: True, ConnectToServer: ");
-            Serial.println(connectToServer());
-        }
-        vTaskDelay(500/portTICK_PERIOD_MS);
-    }
 }
 
 void setup()
 {
     Serial.begin( 115200 ); /* prepare for possible serial debug */
-    
+    Serial.print("CPU FREQUENCY:");
+    Serial.println(getCpuFrequencyMhz());
+    Serial.print("init Heap:");
+    Serial.println(xPortGetFreeHeapSize());
+    Serial.printf("1. Mun of tasks:%d\n",uxTaskGetNumberOfTasks());
     String LVGL_Arduino = "Hello Arduino! ";
     LVGL_Arduino += String('V') + lv_version_major() + "." + lv_version_minor() + "." + lv_version_patch();
 
@@ -299,11 +408,15 @@ void setup()
 
 
     //
-
+    
     mutex=xSemaphoreCreateMutex();
-    xTaskCreatePinnedToCore(lv_timer_han,"lv_timer_handler",10024,NULL,23,NULL,tskNO_AFFINITY);
-    xTaskCreatePinnedToCore(lv_exec,"lv_exec",5024,NULL,3,NULL,1);
-    xTaskCreatePinnedToCore(nejakaF,"NejakaskurvenaFCIA",10024,NULL,1,NULL,0);
+    Serial.printf("2. Mun of tasks:%d\n",uxTaskGetNumberOfTasks());
+    xTaskCreatePinnedToCore(lv_timer_han,"lv_timer_handler",6000,NULL,3,&LCDTask,0);
+    Serial.printf("3. Mun of tasks:%d\n",uxTaskGetNumberOfTasks());
+    xTaskCreatePinnedToCore(lv_exec,"lv_exec",4000,NULL,3,NULL,0);
+    Serial.printf("4. Mun of tasks:%d\n",uxTaskGetNumberOfTasks());
+    xTaskCreatePinnedToCore(MyBluetooth,"MyBluetooth",9000,NULL,1,&BleTask,1);
+    Serial.printf("5. Mun of tasks:%d\n",uxTaskGetNumberOfTasks());
 
     Serial.println( "Setup done" );
 
@@ -313,7 +426,7 @@ void setup()
 void loop()
 {
     //lv_timer_handler(); /* let the GUI do its work */
-    vTaskDelay(50);
+    vTaskDelay(5000);
     //Serial.print(uxTaskPriorityGet(NULL));
 
 }

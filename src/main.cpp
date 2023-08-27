@@ -302,13 +302,24 @@ void lv_exec(void *param)
 */
         
         vTaskDelay(1000);
+
+        if(connected && cnt==0)
+        {
+          cnt++;
+          Serial.println("Utopia connected");
+          lv_event_t *ev=new lv_event_t();
+            ev->code=LV_EVENT_CLICKED;
+            ui_event_Screen1(ev);
+        }
+
+
         Serial.print("newJoystick:");
         Serial.println(newJoystick);
         
         Serial.print("JoystickValue:");
         Serial.println(JoystickValue);
           
-if(newJoystick && JoystickValue==0x60)
+        if(newJoystick && JoystickValue==0x60)
         {cnt++;
         }
         else
@@ -333,9 +344,9 @@ if(newJoystick && JoystickValue==0x60)
             Serial.print(str);
             lv_event_t *ev=new lv_event_t();
             ev->code=LV_EVENT_PRESSED;
-            ev->target=ui_Clock;
+            //ev->target=ui_Clock;
 
-            ui_event_Clock(ev);
+            //ui_event_Clock(ev);
             Serial.print("Clicked 1");
 
             
@@ -347,11 +358,11 @@ if(newJoystick && JoystickValue==0x60)
           newJoystick=false;
             lv_event_t *ev=new lv_event_t();
             ev->code=LV_EVENT_PRESSED;
-            ev->target=ui_Call;
+            //ev->target=ui_Call;
             Serial.print("Clicked 2");
             if(xSemaphoreTake(mutex,0)==pdTRUE)
             {
-                ui_event_Call(ev);
+                //ui_event_Call(ev);
                 
                 xSemaphoreGive(mutex);
             }
@@ -367,11 +378,11 @@ if(newJoystick && JoystickValue==0x60)
           newJoystick=false;
             lv_event_t *ev=new lv_event_t();
             ev->code=LV_EVENT_LEAVE;
-            ev->target=ui_Call;
+            //ev->target=ui_Call;
             Serial.print("Clicked 3");
             if(xSemaphoreTake(mutex,0)==pdTRUE)
             {
-                ui_event_Call(ev);
+                //ui_event_Call(ev);
                 
                 xSemaphoreGive(mutex);
             }

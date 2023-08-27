@@ -338,12 +338,7 @@ if(newJoystick && JoystickValue==0x60)
             ui_event_Clock(ev);
             Serial.print("Clicked 1");
 
-            sprintf(str, "Task is running on the core: %d\n",xPortGetCoreID());
             
-            Serial.print(str);
-
-            sprintf(str,"xTaskGetTickCount:%i\n",xTaskGetTickCount());
-            Serial.print(str);
 
         }
         

@@ -42,10 +42,11 @@ std::map<std::uint16_t, BLERemoteCharacteristic*> :: iterator itrbh;
 //Variables to store Joystick and Battery
 char* JoystickChar;
 char* BatteryChar;
+uint8_t JoystickValue=0;
+uint8_t ButtonsValue=0;
 
 //Flags to check whether new Joystick and Battery readings are available
 bool newJoystick = false;
-bool newBattery = false;
 
 
 //When the BLE Server sends a new Joystick reading with the notify property
@@ -53,11 +54,13 @@ static void JoystickNotifyCallback(BLERemoteCharacteristic* pBLERemoteCharacteri
                                         uint8_t* pData, size_t length, bool isNotify) {
                                           
   //store Joystick value
-  JoystickChar = (char*)pData;
+  //JoystickChar = (char*)pData;
   newJoystick = true;
    for (int i = 0; i < length; i++)
     Serial.printf("%02X ", pData[i]);
   Serial.println();
+  JoystickValue=pData[1];
+  ButtonsValue=pData[0];
 }
 
 //When the BLE Server sends a new Battery reading with the notify property
@@ -65,8 +68,7 @@ static void BatteryNotifyCallback(BLERemoteCharacteristic* pBLERemoteCharacteris
                                     uint8_t* pData, size_t length, bool isNotify) {
   //store Battery value
   BatteryChar = (char*)pData;
-  newBattery = true;
-  Serial.print(newBattery);
+
 }
 
 
@@ -164,6 +166,10 @@ static lv_color_t buf[ screenWidth * screenHeight / 10 ];
 
 TFT_eSPI tft = TFT_eSPI(screenWidth, screenHeight); /* TFT instance */
 
+
+static lv_indev_drv_t indev_drv;
+static lv_disp_drv_t disp_drv;
+
 #if LV_USE_LOG != 0
 /* Serial debugging */
 void my_print(const char * buf)
@@ -227,7 +233,7 @@ void lv_timer_han(void *param)
     lv_disp_draw_buf_init( &draw_buf, buf, NULL, screenWidth * screenHeight / 10 );
 
     /*Initialize the display*/
-    static lv_disp_drv_t disp_drv;
+    
     lv_disp_drv_init( &disp_drv );
     /*Change the following line to your display resolution*/
     disp_drv.hor_res = screenWidth;
@@ -237,7 +243,7 @@ void lv_timer_han(void *param)
     lv_disp_drv_register( &disp_drv );
 
     /*Initialize the (dummy) input device driver*/
-    static lv_indev_drv_t indev_drv;
+    
     lv_indev_drv_init( &indev_drv );
     indev_drv.type = LV_INDEV_TYPE_POINTER;
     indev_drv.read_cb = my_touchpad_read;
@@ -246,16 +252,14 @@ void lv_timer_han(void *param)
 
     ui_init();
     int cnt=0;
-    TickType_t xLastWakeTime=xTaskGetTickCount();
     for(;;)
     {
         //taskYIELD();
 
             //Serial.printf("LV time handler needs to be called:%d\n",);
-            uint32_t tmp=lv_timer_handler();
-            if(tmp<=0)
-            tmp=1;
-            vTaskDelayUntil(&xLastWakeTime,(TickType_t)tmp);
+            lv_timer_handler_run_in_period(5);
+            
+            vTaskDelay(5);
 
     }
 
@@ -279,7 +283,7 @@ void lv_exec(void *param)
     for(;;)
     {
         
-        
+        /*
         Serial.print("Stack in task lv_exec:");
         Serial.println(uxTaskGetStackHighWaterMark(NULL));
         Serial.print("Free Heap:");
@@ -295,13 +299,35 @@ void lv_exec(void *param)
         
         Serial.printf("Mun of tasks:%d\n",uxTaskGetNumberOfTasks());
 
-
-
-        vTaskDelay(1000);
-
+*/
         
-        if(cnt==0 && millis()>5000)
+        vTaskDelay(1000);
+        Serial.print("newJoystick:");
+        Serial.println(newJoystick);
+        
+        Serial.print("JoystickValue:");
+        Serial.println(JoystickValue);
+          
+if(newJoystick && JoystickValue==0x60)
+        {cnt++;
+        }
+        else
+        {
+          if(newJoystick && JoystickValue==0x40 && cnt>0)
+          {
+            cnt--;
+          }
+          else
+          {
+            newJoystick=false;
+          }
+        }
+        Serial.print("cnt: ");
+        Serial.println(cnt);
+
+        if(newJoystick && cnt==0)
         {   cnt++;
+        newJoystick=false;
             char str[20];
             sprintf(str,"xTaskGetTickCount:%d\n",xTaskGetTickCount());
             Serial.print(str);
@@ -320,9 +346,10 @@ void lv_exec(void *param)
             Serial.print(str);
 
         }
-
-        if(cnt==1 && millis()>10000)
+        
+        if(newJoystick &&  cnt==1)
         {
+          newJoystick=false;
             lv_event_t *ev=new lv_event_t();
             ev->code=LV_EVENT_PRESSED;
             ev->target=ui_Call;
@@ -339,8 +366,10 @@ void lv_exec(void *param)
             }
         }
 
-        if(cnt==2 && millis()>15000)
+        if(newJoystick &&  cnt==2)
         {
+          cnt++;
+          newJoystick=false;
             lv_event_t *ev=new lv_event_t();
             ev->code=LV_EVENT_LEAVE;
             ev->target=ui_Call;

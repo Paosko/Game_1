@@ -326,7 +326,7 @@ if(newJoystick && JoystickValue==0x60)
         Serial.println(cnt);
 
         if(newJoystick && cnt==0)
-        {   cnt++;
+        {   
         newJoystick=false;
             char str[20];
             sprintf(str,"xTaskGetTickCount:%d\n",xTaskGetTickCount());
@@ -357,7 +357,7 @@ if(newJoystick && JoystickValue==0x60)
             if(xSemaphoreTake(mutex,0)==pdTRUE)
             {
                 ui_event_Call(ev);
-                cnt++;
+                
                 xSemaphoreGive(mutex);
             }
             else
@@ -368,7 +368,7 @@ if(newJoystick && JoystickValue==0x60)
 
         if(newJoystick &&  cnt==2)
         {
-          cnt++;
+          
           newJoystick=false;
             lv_event_t *ev=new lv_event_t();
             ev->code=LV_EVENT_LEAVE;
@@ -377,7 +377,7 @@ if(newJoystick && JoystickValue==0x60)
             if(xSemaphoreTake(mutex,0)==pdTRUE)
             {
                 ui_event_Call(ev);
-                cnt++;
+                
                 xSemaphoreGive(mutex);
             }
             else

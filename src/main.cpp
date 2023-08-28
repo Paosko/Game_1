@@ -4,7 +4,7 @@
 #include <esp_task_wdt.h>
 #include <BLEDevice.h>
 #include <soc/rtc_wdt.h>
-
+#include <math.h>
 
 
 static SemaphoreHandle_t mutex;
@@ -48,7 +48,65 @@ uint8_t ButtonsValue=0;
 //Flags to check whether new Joystick and Battery readings are available
 bool newJoystick = false;
 
+class GameBall 
+{
+  public:
+  struct Ball
+  {
+    uint speed=1;
+    float BallActualPositionX=0;
+    float BallActualPositionY=0;
+    uint angle=45;
+  };
 
+   struct HraciePole
+  {
+    lv_coord_t sirka=470/2;
+    lv_coord_t sirkaPadding=0;
+    lv_coord_t vyska=290/2;
+    lv_coord_t vyskaPadding=10;
+    uint8_t numOfBalls;
+    Ball Lopty[5];
+  };
+  
+  
+  HraciePole HP=HraciePole();
+  
+  GameBall()
+  {
+    Ball lopta=Ball();
+    HP.Lopty[0]=lopta;
+    HP.numOfBalls=1;
+  }
+  void BallComputeAngle (Ball *lopta)
+{
+
+  float x=cos(lopta->angle);
+  float y=sin(lopta->angle);
+ // Serial.printf("x:%.2f, y:%.2f, InitX:%.2f, InitY:%.2f ",x,y,lopta->BallActualPositionX,lopta->BallActualPositionY);
+  lopta->BallActualPositionX+=x;
+  lopta->BallActualPositionY+=y;
+  //Serial.printf(" FinishX:%.2f, FinishY:%.2f \n",x,y,lopta->BallActualPositionX,lopta->BallActualPositionY);
+}
+
+};
+
+
+
+
+GameBall MojaPrvaHra;
+void BallMove(void *p)
+{
+  
+  for(;;)
+  {
+
+    MojaPrvaHra.BallComputeAngle(&MojaPrvaHra.HP.Lopty[0]);
+    Serial.printf("X:%d, Y:%d\n",(lv_coord_t)MojaPrvaHra.HP.Lopty[0].BallActualPositionX,(lv_coord_t)MojaPrvaHra.HP.Lopty[0].BallActualPositionY);
+    vTaskDelay(500);
+  }
+  
+}
 //When the BLE Server sends a new Joystick reading with the notify property
 static void JoystickNotifyCallback(BLERemoteCharacteristic* pBLERemoteCharacteristic, 
                                         uint8_t* pData, size_t length, bool isNotify) {
@@ -61,6 +119,7 @@ static void JoystickNotifyCallback(BLERemoteCharacteristic* pBLERemoteCharacteri
   Serial.println();
   JoystickValue=pData[1];
   ButtonsValue=pData[0];
+  
 }
 
 //When the BLE Server sends a new Battery reading with the notify property
@@ -279,119 +338,36 @@ void lv_exec(void *param)
  //   static int cnt=0;
  Serial.printf("Init used Stack in task lv_exec:%d\n",uxTaskGetStackHighWaterMark(NULL));
     
-    int cnt=0;
-    for(;;)
+  int cnt=0;
+  for(;;)
+  {          
+    vTaskDelay(1000);
+    if(!connected)
     {
-        
-        /*
-        Serial.print("Stack in task lv_exec:");
-        Serial.println(uxTaskGetStackHighWaterMark(NULL));
-        Serial.print("Free Heap:");
-        Serial.println(xPortGetFreeHeapSize());
-
-
-        Serial.print("Stack in task BleTask:");
-        Serial.println(uxTaskGetStackHighWaterMark(BleTask));
-
-        Serial.print("Stack in task LCDTask:");
-        Serial.println(uxTaskGetStackHighWaterMark(LCDTask));
-
-        
-        Serial.printf("Mun of tasks:%d\n",uxTaskGetNumberOfTasks());
-
-*/
-        
-        vTaskDelay(1000);
-
-        if(connected && cnt==0)
-        {
-          cnt++;
-          Serial.println("Utopia connected");
-          lv_event_t *ev=new lv_event_t();
-            ev->code=LV_EVENT_CLICKED;
-            ui_event_Screen1(ev);
-        }
-
-
-        Serial.print("newJoystick:");
-        Serial.println(newJoystick);
-        
-        Serial.print("JoystickValue:");
-        Serial.println(JoystickValue);
-          
-        if(newJoystick && JoystickValue==0x60)
-        {cnt++;
-        }
-        else
-        {
-          if(newJoystick && JoystickValue==0x40 && cnt>0)
-          {
-            cnt--;
-          }
-          else
-          {
-            newJoystick=false;
-          }
-        }
-        Serial.print("cnt: ");
-        Serial.println(cnt);
-
-        if(newJoystick && cnt==0)
-        {   
-        newJoystick=false;
-            char str[20];
-            sprintf(str,"xTaskGetTickCount:%d\n",xTaskGetTickCount());
-            Serial.print(str);
-            lv_event_t *ev=new lv_event_t();
-            ev->code=LV_EVENT_PRESSED;
-            //ev->target=ui_Clock;
-
-            //ui_event_Clock(ev);
-            Serial.print("Clicked 1");
-
-            
-
-        }
-        
-        if(newJoystick &&  cnt==1)
-        {
-          newJoystick=false;
-            lv_event_t *ev=new lv_event_t();
-            ev->code=LV_EVENT_PRESSED;
-            //ev->target=ui_Call;
-            Serial.print("Clicked 2");
-            if(xSemaphoreTake(mutex,0)==pdTRUE)
-            {
-                //ui_event_Call(ev);
-                
-                xSemaphoreGive(mutex);
-            }
-            else
-            {
-                Serial.print("Wait for Mutex");
-            }
-        }
-
-        if(newJoystick &&  cnt==2)
-        {
-          
-          newJoystick=false;
-            lv_event_t *ev=new lv_event_t();
-            ev->code=LV_EVENT_LEAVE;
-            //ev->target=ui_Call;
-            Serial.print("Clicked 3");
-            if(xSemaphoreTake(mutex,0)==pdTRUE)
-            {
-                //ui_event_Call(ev);
-                
-                xSemaphoreGive(mutex);
-            }
-            else
-            {
-                Serial.print("Wait for Mutex");
-            }
-        }
+      static uint ct2=0;
+      ct2++;
+      lv_textarea_set_text(ui_TextArea2,"moj iny text");
+      
     }
+
+    if(connected && cnt==0)
+    {
+      cnt++;
+      Serial.println("Utopia connected");
+      lv_event_t *ev=new lv_event_t();
+        ev->code=LV_EVENT_CLICKED;
+        ui_event_Screen1(ev);
+        GameBall myGame;
+    }
+
+    if(connected)
+    {
+        xTaskCreate(BallMove,"BallMove",5000,NULL,1,NULL);
+        lv_obj_set_x(ui_Button3,(lv_coord_t)MojaPrvaHra.HP.Lopty[0].BallActualPositionX);
+        lv_obj_set_y(ui_Button3,(lv_coord_t)MojaPrvaHra.HP.Lopty[0].BallActualPositionY);
+      
+    }
+  }
 }
 
 
@@ -410,20 +386,25 @@ void MyBluetooth(void * param)
   pBLEScan->start(30);
   for(;;)
   {
-    vTaskDelay(500);
-    if (doConnect == true) {
-    Serial.printf("Start connecting to %s\n",pServerAddress->toString());
-    if (connectToServer(*pServerAddress)) {
-      Serial.println("We are now connected to the BLE Server.");
-      //Activate the Notify property of each Characteristic
-      //JoystickCharacteristic->getDescriptor(BLEUUID((uint16_t)0x2902))->writeValue((uint8_t*)notificationOn, 2, true);
-      //BatteryCharacteristic->getDescriptor(BLEUUID((uint16_t)0x2902))->writeValue((uint8_t*)notificationOn, 2, true);
-      connected = true;
-    } else {
-      Serial.println("We have failed to connect to the server; Restart your device to scan for nearby BLE server again.");
+      vTaskDelay(500);
+      if (doConnect == true) {
+      Serial.printf("Start connecting to %s\n",pServerAddress->toString());
+      if (connectToServer(*pServerAddress)) {
+        Serial.println("We are now connected to the BLE Server.");
+        //Activate the Notify property of each Characteristic
+        //JoystickCharacteristic->getDescriptor(BLEUUID((uint16_t)0x2902))->writeValue((uint8_t*)notificationOn, 2, true);
+        //BatteryCharacteristic->getDescriptor(BLEUUID((uint16_t)0x2902))->writeValue((uint8_t*)notificationOn, 2, true);
+        connected = true;
+      } else {
+        Serial.println("We have failed to connect to the server; Restart your device to scan for nearby BLE server again.");
+      }
+      doConnect = false;
     }
-    doConnect = false;
-  }
+
+    if(!connected)
+    {
+      pBLEScan->start(30);
+    }
   }
 }
 

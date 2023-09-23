@@ -10,7 +10,7 @@
 static SemaphoreHandle_t mutex;
 TaskHandle_t LCDTask;
 TaskHandle_t BleTask;
-
+String MySerInput;
 
 #define bleServerName "Utopia 360 Remote"
 
@@ -53,10 +53,10 @@ class GameBall
   public:
   struct Ball
   {
-    uint speed=1;
     float BallActualPositionX=0;
     float BallActualPositionY=0;
     uint angle=45;
+    float speed=0.5;
   };
 
    struct HraciePole
@@ -81,8 +81,8 @@ class GameBall
   void BallComputeAngle (Ball *lopta)
 {
 
-  float x=cos(lopta->angle);
-  float y=sin(lopta->angle);
+  float x=cos(lopta->angle)*lopta->speed;
+  float y=sin(lopta->angle)*lopta->speed;
  // Serial.printf("x:%.2f, y:%.2f, InitX:%.2f, InitY:%.2f ",x,y,lopta->BallActualPositionX,lopta->BallActualPositionY);
   lopta->BallActualPositionX+=x;
   lopta->BallActualPositionY+=y;
@@ -92,7 +92,32 @@ class GameBall
 };
 
 
-
+uint8_t MyCommandCompare(String CompCommand)
+{
+  if(!MySerInput.isEmpty())
+  {
+    if(MySerInput.substring(0,CompCommand.length()-1).compareTo(CompCommand))
+    {
+      Serial.print("MySerInput length: ");
+      Serial.println(MySerInput.length());
+      {if(MySerInput.length()-2>CompCommand.length()) 
+        {
+          Serial.println("Je wite");
+          return CompCommand.length(); //Return Write 
+        }
+        else
+        {
+          Serial.println("Je read");
+          return 1; //Return read
+        }
+      }
+    }
+    Serial.println("Nerovna sa");
+    MySerInput.clear();
+    return 0; //Not much
+  }
+  return 0; //Not much
+}
 
 GameBall MojaPrvaHra;
 void BallMove(void *p)
@@ -100,10 +125,27 @@ void BallMove(void *p)
   
   for(;;)
   {
+    uint8_t comp=MyCommandCompare("b.s");
+    if(comp>1)
+    {
+      Serial.println("Nastavujem rychlost lopty");
+      MojaPrvaHra.HP.Lopty[0].speed=MySerInput.substring(comp,MySerInput.length()-2).toFloat();
+      MySerInput.clear();
+    }
+    if(comp==1)
+    {
+      Serial.print("Rychlost lopty");
+     Serial.println( MojaPrvaHra.HP.Lopty[0].speed);
+     MySerInput.clear();
+    }
+
 
     MojaPrvaHra.BallComputeAngle(&MojaPrvaHra.HP.Lopty[0]);
-    Serial.printf("X:%d, Y:%d\n",(lv_coord_t)MojaPrvaHra.HP.Lopty[0].BallActualPositionX,(lv_coord_t)MojaPrvaHra.HP.Lopty[0].BallActualPositionY);
-    vTaskDelay(500);
+    Serial.print("X:");
+    Serial.print((lv_coord_t)MojaPrvaHra.HP.Lopty[0].BallActualPositionX);
+    Serial.print("Y:");
+    Serial.print((lv_coord_t)MojaPrvaHra.HP.Lopty[0].BallActualPositionY);
+    vTaskDelay(30);
   }
   
 }
@@ -115,7 +157,8 @@ static void JoystickNotifyCallback(BLERemoteCharacteristic* pBLERemoteCharacteri
   //JoystickChar = (char*)pData;
   newJoystick = true;
    for (int i = 0; i < length; i++)
-    Serial.printf("%02X ", pData[i]);
+    Serial.print(pData[i]);
+    
   Serial.println();
   JoystickValue=pData[1];
   ButtonsValue=pData[0];
@@ -146,7 +189,7 @@ bool connectToServer(BLEAddress pAddress) {
   for(auto it = pRemoteServices->cbegin(); it != pRemoteServices->cend(); ++it)
 {
 
-  Serial.printf("first: %s second.getUUID:%s, second.tostring:%s\n",it->first.c_str(),it->second->getUUID().toString().c_str(),it->second->toString().c_str());
+  //Serial.printf("first: %s second.getUUID:%s, second.tostring:%s\n",it->first.c_str(),it->second->getUUID().toString().c_str(),it->second->toString().c_str());
 
   //  std::cout << it->first << " " << it->second.first << " " << it->second.second << "\n";
 }
@@ -164,7 +207,7 @@ bool connectToServer(BLEAddress pAddress) {
   for( itrbh = pRemoteCharacteristic->begin(); itrbh != pRemoteCharacteristic->end(); ++itrbh)
   {
     
-    Serial.printf("pRemoteCharacteristic: first: %d second.getUUID:%s, second.tostring:%s\n",itrbh->first,itrbh->second->getUUID().toString().c_str(),itrbh->second->toString().c_str());
+    //erial.printf("pRemoteCharacteristic: first: %d second.getUUID:%s, second.tostring:%s\n",itrbh->first,itrbh->second->getUUID().toString().c_str(),itrbh->second->toString().c_str());
     if (JoystickCharacteristicUUID.equals (itrbh->second->getUUID()))
     {
       if (itrbh->second->canNotify())
@@ -206,7 +249,8 @@ bool connectToServer(BLEAddress pAddress) {
 //Callback function that gets called, when another device's advertisement has been received
 class MyAdvertisedDeviceCallbacks: public BLEAdvertisedDeviceCallbacks {
   void onResult(BLEAdvertisedDevice advertisedDevice) {
-    Serial.printf("AdvertisedDevice:%s\n",advertisedDevice.getName().c_str());
+    Serial.print("AdvertisedDevice:%s");
+    Serial.println(advertisedDevice.getName().c_str());
     if (advertisedDevice.getName() == bleServerName) { //Check if the name of the advertiser matches
       advertisedDevice.getScan()->stop(); //Scan can be stopped, we found what we are looking for
       pServerAddress = new BLEAddress(advertisedDevice.getAddress()); //Address of advertiser is the one we need
@@ -336,18 +380,16 @@ void Wdt_reset(void *param)
 void lv_exec(void *param)
 {
  //   static int cnt=0;
- Serial.printf("Init used Stack in task lv_exec:%d\n",uxTaskGetStackHighWaterMark(NULL));
-    
+  Serial.print("Init used Stack in task lv_exec:");
+  Serial.println(uxTaskGetStackHighWaterMark(NULL)); 
   int cnt=0;
   for(;;)
   {          
-    vTaskDelay(1000);
+    vTaskDelay(10);
     if(!connected)
     {
-      static uint ct2=0;
-      ct2++;
+      vTaskDelay(10000);
       lv_textarea_set_text(ui_TextArea2,"moj iny text");
-      
     }
 
     if(connected && cnt==0)
@@ -388,7 +430,7 @@ void MyBluetooth(void * param)
   {
       vTaskDelay(500);
       if (doConnect == true) {
-      Serial.printf("Start connecting to %s\n",pServerAddress->toString());
+      //Serial.printf("Start connecting to %s\n",pServerAddress->toString());
       if (connectToServer(*pServerAddress)) {
         Serial.println("We are now connected to the BLE Server.");
         //Activate the Notify property of each Characteristic
@@ -408,8 +450,28 @@ void MyBluetooth(void * param)
   }
 }
 
+
+void MySerialDebug(void * param)
+{
+  for(;;)
+  {
+    
+    if(Serial.available())
+    {
+      
+      MySerInput=Serial.readString();
+      Serial.print("Command:");
+      Serial.println(MySerInput);
+    }
+    vTaskDelay(200);
+  }
+}
+
+
 void setup()
 {
+    pinMode(TFT_BL,OUTPUT);
+    digitalWrite(TFT_BL,HIGH);
     Serial.begin( 115200 ); /* prepare for possible serial debug */
     Serial.print("CPU FREQUENCY:");
     Serial.println(getCpuFrequencyMhz());
@@ -424,7 +486,7 @@ void setup()
 
 
     //
-    
+    xTaskCreate(MySerialDebug,"MySerialDebug",1024,NULL,1,NULL);
     mutex=xSemaphoreCreateMutex();
     Serial.printf("2. Mun of tasks:%d\n",uxTaskGetNumberOfTasks());
     xTaskCreatePinnedToCore(lv_timer_han,"lv_timer_handler",6000,NULL,3,&LCDTask,0);

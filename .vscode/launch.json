@@ -12,21 +12,21 @@
             "type": "platformio-debug",
             "request": "launch",
             "name": "PIO Debug",
-            "executable": "D:/Projekty/Hra/Game_1/.pio/build/wemos_d1_mini32/firmware.elf",
-            "projectEnvName": "wemos_d1_mini32",
+            "executable": "D:/Projekty/Hra/Game_1/.pio/build/wemos_d1_mini32_LVGL_1Pok_SPI_Velky/firmware.elf",
+            "projectEnvName": "wemos_d1_mini32_LVGL_1Pok_SPI_Velky",
             "toolchainBinDir": "C:/Users/Paosko/.platformio/packages/toolchain-xtensa-esp32@8.4.0+2021r2-patch5/bin",
             "internalConsoleOptions": "openOnSessionStart",
             "preLaunchTask": {
                 "type": "PlatformIO",
-                "task": "Pre-Debug"
+                "task": "Pre-Debug (wemos_d1_mini32_LVGL_1Pok_SPI_Velky)"
             }
         },
         {
             "type": "platformio-debug",
             "request": "launch",
             "name": "PIO Debug (skip Pre-Debug)",
-            "executable": "D:/Projekty/Hra/Game_1/.pio/build/wemos_d1_mini32/firmware.elf",
-            "projectEnvName": "wemos_d1_mini32",
+            "executable": "D:/Projekty/Hra/Game_1/.pio/build/wemos_d1_mini32_LVGL_1Pok_SPI_Velky/firmware.elf",
+            "projectEnvName": "wemos_d1_mini32_LVGL_1Pok_SPI_Velky",
             "toolchainBinDir": "C:/Users/Paosko/.platformio/packages/toolchain-xtensa-esp32@8.4.0+2021r2-patch5/bin",
             "internalConsoleOptions": "openOnSessionStart"
         },
@@ -34,8 +34,8 @@
             "type": "platformio-debug",
             "request": "launch",
             "name": "PIO Debug (without uploading)",
-            "executable": "D:/Projekty/Hra/Game_1/.pio/build/wemos_d1_mini32/firmware.elf",
-            "projectEnvName": "wemos_d1_mini32",
+            "executable": "D:/Projekty/Hra/Game_1/.pio/build/wemos_d1_mini32_LVGL_1Pok_SPI_Velky/firmware.elf",
+            "projectEnvName": "wemos_d1_mini32_LVGL_1Pok_SPI_Velky",
             "toolchainBinDir": "C:/Users/Paosko/.platformio/packages/toolchain-xtensa-esp32@8.4.0+2021r2-patch5/bin",
             "internalConsoleOptions": "openOnSessionStart",
             "loadMode": "manual"

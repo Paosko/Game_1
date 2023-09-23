@@ -396,17 +396,42 @@ void lv_exec(void *param)
     {
       cnt++;
       Serial.println("Utopia connected");
+      
       lv_event_t *ev=new lv_event_t();
         ev->code=LV_EVENT_CLICKED;
-        ui_event_Screen1(ev);
+        ui_event_Screen1(ev); // Vygeneruje Event akože som klikol hlavnuobrazovku
         GameBall myGame;
     }
 
-    if(connected)
+    if(connected && cnt==1)
+    {
+      
+      Serial.println("BrickFocused");
+      lv_obj_add_state(ui_PanelBlrickGame,LV_STATE_FOCUSED);
+      
+      vTaskDelay(5000);
+      Serial.println("brick defoc wolf foc");
+      lv_obj_clear_state(ui_PanelBlrickGame,LV_STATE_FOCUSED);
+      lv_obj_add_state(ui_PanelWolfGame,LV_STATE_FOCUSED);
+      vTaskDelay(5000);
+      Serial.println("wolf defoc brick foc");
+      lv_obj_clear_state(ui_PanelWolfGame,LV_STATE_FOCUSED);
+      lv_obj_add_state(ui_PanelBlrickGame,LV_STATE_FOCUSED);
+      vTaskDelay(10000);
+      Serial.println("Brick Clicked");
+      lv_event_t *ev=new lv_event_t();
+      ev->code=LV_EVENT_CLICKED;
+      ui_event_PanelBlrickGame(ev); // Vygeneruje Event akože som klikol hlavnuobrazovku
+      cnt++;
+
+      
+    }
+
+        if(connected && cnt==2)
     {
         xTaskCreate(BallMove,"BallMove",5000,NULL,1,NULL);
-        lv_obj_set_x(ui_Button3,(lv_coord_t)MojaPrvaHra.HP.Lopty[0].BallActualPositionX);
-        lv_obj_set_y(ui_Button3,(lv_coord_t)MojaPrvaHra.HP.Lopty[0].BallActualPositionY);
+        lv_obj_set_x(ui_Ball,(lv_coord_t)MojaPrvaHra.HP.Lopty[0].BallActualPositionX);
+        lv_obj_set_y(ui_Ball,(lv_coord_t)MojaPrvaHra.HP.Lopty[0].BallActualPositionY);
       
     }
   }
@@ -470,8 +495,10 @@ void MySerialDebug(void * param)
 
 void setup()
 {
+  #if wemos_d1_mini32_LVGL_1Pok_SPI_Velky
     pinMode(TFT_BL,OUTPUT);
     digitalWrite(TFT_BL,HIGH);
+  #endif
     Serial.begin( 115200 ); /* prepare for possible serial debug */
     Serial.print("CPU FREQUENCY:");
     Serial.println(getCpuFrequencyMhz());

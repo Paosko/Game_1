@@ -1,6 +1,6 @@
 #include <lvgl.h>
 #include <TFT_eSPI.h>
-#include <ui.h>
+#include "ui/ui.h"
 #include <esp_task_wdt.h>
 #include <BLEDevice.h>
 #include <soc/rtc_wdt.h>

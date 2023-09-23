@@ -11,6 +11,8 @@ static SemaphoreHandle_t mutex;
 TaskHandle_t LCDTask;
 TaskHandle_t BleTask;
 String MySerInput;
+static QueueHandle_t BleKeyboardQueue;
+
 
 #define bleServerName "Utopia 360 Remote"
 
@@ -39,14 +41,14 @@ std::map<std::uint16_t, BLERemoteCharacteristic*> *pRemoteCharacteristic;
 std::map<std::uint16_t, BLERemoteCharacteristic*> :: iterator itrbh;
 
 
-//Variables to store Joystick and Battery
-char* JoystickChar;
-char* BatteryChar;
-uint8_t JoystickValue=0;
-uint8_t ButtonsValue=0;
 
 //Flags to check whether new Joystick and Battery readings are available
-bool newJoystick = false;
+struct BleKey
+{
+  uint32_t Key;
+  bool State;
+};
+
 
 class GameBall 
 {
@@ -141,27 +143,74 @@ void BallMove(void *p)
 
 
     MojaPrvaHra.BallComputeAngle(&MojaPrvaHra.HP.Lopty[0]);
-    Serial.print("X:");
+    /*Serial.print("X:");
     Serial.print((lv_coord_t)MojaPrvaHra.HP.Lopty[0].BallActualPositionX);
     Serial.print("Y:");
-    Serial.print((lv_coord_t)MojaPrvaHra.HP.Lopty[0].BallActualPositionY);
+    Serial.print((lv_coord_t)MojaPrvaHra.HP.Lopty[0].BallActualPositionY);*/
     vTaskDelay(30);
   }
   
 }
+uint32_t JoystickMap(uint32_t Joystick)
+{
+  if(Joystick==144)
+  {return LV_KEY_LEFT;}
+
+  if(Joystick==16)
+  {return LV_KEY_RIGHT;}
+
+  if(Joystick==64)
+  {return LV_KEY_UP;}
+
+  if(Joystick==96)
+  {return LV_KEY_DOWN;}
+
+  return 3;
+}
+
 //When the BLE Server sends a new Joystick reading with the notify property
 static void JoystickNotifyCallback(BLERemoteCharacteristic* pBLERemoteCharacteristic, 
                                         uint8_t* pData, size_t length, bool isNotify) {
                                           
+  
+  static BleKey Klavesa;
   //store Joystick value
   //JoystickChar = (char*)pData;
-  newJoystick = true;
-   for (int i = 0; i < length; i++)
-    Serial.print(pData[i]);
-    
-  Serial.println();
-  JoystickValue=pData[1];
-  ButtonsValue=pData[0];
+    static uint32_t Joystick=80; //144 vlavo, 16 vpravo, 64 hore, 96 dole, 80 vypnute
+    static bool A=false;
+    static bool B=false;
+    static bool C=false;
+    static bool D=false;
+    static bool X=false;
+    static bool Y=false;
+
+      /*Serial.print("key: ");
+      Serial.println(pData[0],BIN);
+      Serial.print("Joy: ");
+      Serial.println(pData[1],BIN);*/
+
+      if(pData[1]!=Joystick) //Ak je zmena na Joysticku
+      {
+
+        if(Joystick!=80) // pokiaľ sa predch hodnota !=nestlačene, zruš stlačene
+        {
+          Klavesa.Key=JoystickMap(Joystick);
+          Klavesa.State=false;
+          if(xQueueSend(BleKeyboardQueue,(void*)&Klavesa,10)!=pdTRUE)
+            {Serial.println("Queue sending problem ");}
+        }
+        
+        Joystick=pData[1]; // Uloz novu hodnotu
+        
+        if(Joystick!=80)  //Ak sa nova hodnota nerovna nestlacene tak ju nastav
+          Klavesa.Key=JoystickMap(Joystick);
+          Klavesa.State=true;
+          if(xQueueSend(BleKeyboardQueue,(void*)&Klavesa,10)!=pdTRUE)
+              {Serial.println("Queue sending problem ");}
+        
+      }
+  
+  
   
 }
 
@@ -169,7 +218,7 @@ static void JoystickNotifyCallback(BLERemoteCharacteristic* pBLERemoteCharacteri
 static void BatteryNotifyCallback(BLERemoteCharacteristic* pBLERemoteCharacteristic, 
                                     uint8_t* pData, size_t length, bool isNotify) {
   //store Battery value
-  BatteryChar = (char*)pData;
+  //BatteryChar = (char*)pData;
 
 }
 
@@ -281,7 +330,7 @@ void my_print(const char * buf)
     Serial.flush();
 }
 #endif
-
+ 
 /* Display flushing */
 void my_disp_flush( lv_disp_drv_t *disp, const lv_area_t *area, lv_color_t *color_p )
 {
@@ -297,31 +346,36 @@ void my_disp_flush( lv_disp_drv_t *disp, const lv_area_t *area, lv_color_t *colo
 }
 
 /*Read the touchpad*/
-void my_touchpad_read( lv_indev_drv_t * indev_driver, lv_indev_data_t * data )
+void my_Keyboard_read( lv_indev_drv_t * indev_driver, lv_indev_data_t * data )
 {
-    uint16_t touchX = 0, touchY = 0;
-
-    bool touched = false;//tft.getTouch( &touchX, &touchY, 600 );
-
-    if( !touched )
-    {
+  static BleKey Klavesa;
+  if(xQueueReceive(BleKeyboardQueue,(void *)&Klavesa,0)==pdTRUE)
+  {
+      data->key = Klavesa.Key;//last_key();            /*Get the last pressed or released key*/
+      if(Klavesa.State)
+      {
+        //Serial.println("Joystick bol stlaceny");
+        data->state=LV_INDEV_STATE_PR;
+      }
+      else
+      {
+        //Serial.println("Joystick bol pusteny");
         data->state = LV_INDEV_STATE_REL;
-    }
-    else
-    {
-        data->state = LV_INDEV_STATE_PR;
+      }
+      Serial.print("Klavesa:");
+      Serial.print(Klavesa.Key);
+      Serial.print("    Hodnota:");
+      Serial.println(Klavesa.State);
+      
+  }
 
-        /*Set the coordinates*/
-        data->point.x = touchX;
-        data->point.y = touchY;
+  //if(key_pressed()) data->state = LV_INDEV_STATE_PR;
+  //else data->state = LV_INDEV_STATE_REL;
 
-        Serial.print( "Data x " );
-        Serial.println( touchX );
-
-        Serial.print( "Data y " );
-        Serial.println( touchY );
-    }
+  //return false; /*No buffering now so no more data read*/
 }
+
+
 void lv_timer_han(void *param)
 {
     lv_init();
@@ -348,8 +402,8 @@ void lv_timer_han(void *param)
     /*Initialize the (dummy) input device driver*/
     
     lv_indev_drv_init( &indev_drv );
-    indev_drv.type = LV_INDEV_TYPE_POINTER;
-    indev_drv.read_cb = my_touchpad_read;
+    indev_drv.type = LV_INDEV_TYPE_KEYPAD;
+    indev_drv.read_cb = my_Keyboard_read;
     lv_indev_drv_register( &indev_drv );
 
 
@@ -505,6 +559,7 @@ void setup()
     Serial.print("init Heap:");
     Serial.println(xPortGetFreeHeapSize());
     Serial.printf("1. Mun of tasks:%d\n",uxTaskGetNumberOfTasks());
+    BleKeyboardQueue=xQueueCreate(10, sizeof(BleKey));
     String LVGL_Arduino = "Hello Arduino! ";
     LVGL_Arduino += String('V') + lv_version_major() + "." + lv_version_minor() + "." + lv_version_patch();
 

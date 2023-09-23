@@ -13,7 +13,7 @@
 
 /* clang-format off */
 #if 1 /*Set it to "1" to enable content*/
-    #warning "LV_CONF wemos_d1_mini32_LVGL_1Pok_SPI_Velky"
+    //#warning "LV_CONF wemos_d1_mini32_LVGL_1Pok_SPI_Velky"
     #ifndef LV_CONF_H
     #define LV_CONF_H
 
@@ -271,7 +271,7 @@
     *-----------*/
 
     /*1: Show CPU usage and FPS count*/
-    #define LV_USE_PERF_MONITOR 0
+    #define LV_USE_PERF_MONITOR 1
     #if LV_USE_PERF_MONITOR
         #define LV_USE_PERF_MONITOR_POS LV_ALIGN_BOTTOM_RIGHT
     #endif
@@ -461,7 +461,7 @@
     *  WIDGET USAGE
     *================*/
 
-    /*Documentation of the widgets: https://docs.lvgl.io/latest/en/html/widgets/index.html*/
+    /*Documentation of the widgets: d
 
     #define LV_USE_ARC        1
 

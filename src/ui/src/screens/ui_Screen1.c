@@ -48,11 +48,11 @@ lv_obj_set_x( ui_TextArea2, 0 );
 lv_obj_set_y( ui_TextArea2, 85 );
 lv_obj_set_align( ui_TextArea2, LV_ALIGN_CENTER );
 lv_textarea_set_text(ui_TextArea2,"Connecting...");
-lv_textarea_set_placeholder_text(ui_TextArea2,"Placeholder...");
+lv_obj_clear_flag( ui_TextArea2, LV_OBJ_FLAG_PRESS_LOCK | LV_OBJ_FLAG_CLICK_FOCUSABLE | LV_OBJ_FLAG_GESTURE_BUBBLE | LV_OBJ_FLAG_SNAPPABLE | LV_OBJ_FLAG_SCROLLABLE | LV_OBJ_FLAG_SCROLL_ELASTIC | LV_OBJ_FLAG_SCROLL_MOMENTUM | LV_OBJ_FLAG_SCROLL_CHAIN );    /// Flags
+lv_obj_set_scrollbar_mode(ui_TextArea2, LV_SCROLLBAR_MODE_OFF);
 
 
 
 lv_obj_add_event_cb(ui_TextArea2, ui_event_TextArea2, LV_EVENT_ALL, NULL);
-lv_obj_add_event_cb(ui_Screen1, ui_event_Screen1, LV_EVENT_ALL, NULL);
 
 }

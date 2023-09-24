@@ -7,7 +7,7 @@
 #include "ui_helpers.h"
 
 ///////////////////// VARIABLES ////////////////////
-
+lv_group_t * MyControlGroup;
 
 // SCREEN: ui_Screen1
 void ui_Screen1_screen_init(void);
@@ -15,6 +15,7 @@ void ui_event_Screen1( lv_event_t * e);
 lv_obj_t *ui_Screen1;
 lv_obj_t *ui_Spinner1;
 lv_obj_t *ui_TextArea1;
+void ui_event_TextArea2( lv_event_t * e);
 lv_obj_t *ui_TextArea2;
 
 
@@ -61,33 +62,48 @@ if ( event_code == LV_EVENT_CLICKED) {
       _ui_screen_change( &ui_Menu, LV_SCR_LOAD_ANIM_FADE_ON, 500, 0, &ui_Menu_screen_init);
 }
 }
+void ui_event_TextArea2( lv_event_t * e) {
+    lv_event_code_t event_code = lv_event_get_code(e);lv_obj_t * target = lv_event_get_target(e);
+if ( event_code == LV_EVENT_CLICKED) {
+    lv_group_remove_all_objs(MyControlGroup);
+    lv_group_add_obj(MyControlGroup,ui_PanelWolfGame);
+    lv_group_add_obj(MyControlGroup,ui_PanelBlrickGame);
+
+    _ui_screen_change( &ui_Menu, LV_SCR_LOAD_ANIM_NONE, 500, 0, &ui_Menu_screen_init);
+}
+}
 void ui_event_Menu( lv_event_t * e) {
     lv_event_code_t event_code = lv_event_get_code(e);lv_obj_t * target = lv_event_get_target(e);
 if ( event_code == LV_EVENT_CLICKED) {
+     lv_group_remove_all_objs(MyControlGroup);
       _ui_screen_change( &ui_Screen1, LV_SCR_LOAD_ANIM_FADE_ON, 500, 0, &ui_Screen1_screen_init);
 }
 }
 void ui_event_PanelBlrickGame( lv_event_t * e) {
     lv_event_code_t event_code = lv_event_get_code(e);lv_obj_t * target = lv_event_get_target(e);
 if ( event_code == LV_EVENT_CLICKED) {
+     lv_group_remove_all_objs(MyControlGroup);
       _ui_screen_change( &ui_BrickBall, LV_SCR_LOAD_ANIM_FADE_ON, 500, 0, &ui_BrickBall_screen_init);
 }
 }
 void ui_event_PanelWolfGame( lv_event_t * e) {
     lv_event_code_t event_code = lv_event_get_code(e);lv_obj_t * target = lv_event_get_target(e);
 if ( event_code == LV_EVENT_CLICKED) {
-      _ui_screen_change( &ui_Wolf, LV_SCR_LOAD_ANIM_FADE_ON, 500, 0, &ui_Wolf_screen_init);
+     lv_group_remove_all_objs(MyControlGroup);
+      _ui_screen_change( &ui_Wolf, LV_SCR_LOAD_ANIM_MOVE_RIGHT, 500, 0, &ui_Wolf_screen_init);
 }
 }
 void ui_event_BrickBall( lv_event_t * e) {
     lv_event_code_t event_code = lv_event_get_code(e);lv_obj_t * target = lv_event_get_target(e);
 if ( event_code == LV_EVENT_CLICKED) {
+     lv_group_remove_all_objs(MyControlGroup);
       _ui_screen_change( &ui_Screen1, LV_SCR_LOAD_ANIM_FADE_ON, 500, 0, &ui_Screen1_screen_init);
 }
 }
 void ui_event_Wolf( lv_event_t * e) {
     lv_event_code_t event_code = lv_event_get_code(e);lv_obj_t * target = lv_event_get_target(e);
 if ( event_code == LV_EVENT_CLICKED) {
+     lv_group_remove_all_objs(MyControlGroup);
       _ui_screen_change( &ui_Screen1, LV_SCR_LOAD_ANIM_FADE_ON, 500, 0, &ui_Screen1_screen_init);
 }
 }

@@ -12,7 +12,7 @@ TaskHandle_t LCDTask;
 TaskHandle_t BleTask;
 String MySerInput;
 static QueueHandle_t BleKeyboardQueue;
-
+lv_indev_t * KeyDriver;
 
 #define bleServerName "Utopia 360 Remote"
 
@@ -36,7 +36,7 @@ static BLEAddress *pServerAddress;
 //Characteristicd that we want to read
 static BLERemoteCharacteristic* JoystickCharacteristic;
 static BLERemoteCharacteristic* BatteryCharacteristic;
-BLEClient* pClient;
+BLEClient* pClient=BLEDevice::createClient();
 std::map<std::uint16_t, BLERemoteCharacteristic*> *pRemoteCharacteristic;
 std::map<std::uint16_t, BLERemoteCharacteristic*> :: iterator itrbh;
 
@@ -263,7 +263,6 @@ static void BatteryNotifyCallback(BLERemoteCharacteristic* pBLERemoteCharacteris
 
 //Connect to the BLE Server that has the name, Service, and Characteristics
 bool connectToServer(BLEAddress pAddress) {
-  pClient = BLEDevice::createClient();
  
   // Connect to the remove BLE Server.
   pClient->connect(pAddress);
@@ -441,10 +440,13 @@ void lv_timer_han(void *param)
     lv_indev_drv_init( &indev_drv );
     indev_drv.type = LV_INDEV_TYPE_KEYPAD;
     indev_drv.read_cb = my_Keyboard_read;
-    lv_indev_drv_register( &indev_drv );
+    KeyDriver= lv_indev_drv_register( &indev_drv );
+    
+
 
 
     ui_init();
+ 
     int cnt=0;
     for(;;)
     {
@@ -468,54 +470,62 @@ void Wdt_reset(void *param)
     }
 }
 
+void initializeAfterConnect()
+{
+  lv_obj_add_state(ui_Spinner1,LV_STATE_DISABLED);
+  lv_textarea_set_text(ui_TextArea1,"Utopia Connected");
+  lv_textarea_set_text(ui_TextArea2,"Press 'A' key for continue");
+  lv_group_add_obj(MyControlGroup,ui_TextArea2);
+  lv_indev_set_group(KeyDriver,MyControlGroup);
+
+}
+
+
 void lv_exec(void *param)
 {
  //   static int cnt=0;
   Serial.print("Init used Stack in task lv_exec:");
   Serial.println(uxTaskGetStackHighWaterMark(NULL)); 
+  MyControlGroup=lv_group_create(); 
   int cnt=0;
   for(;;)
-  {          
+  {      
+  static bool wasConnected=false;    
     vTaskDelay(10);
     if(!connected)
     {
-      vTaskDelay(10000);
-      lv_textarea_set_text(ui_TextArea2,"moj iny text");
+      
+      if(wasConnected)
+      {
+        Serial.println("Disconnected ->init screen");
+        wasConnected=false;
+        lv_group_remove_all_objs(MyControlGroup);
+        _ui_screen_change( &ui_Screen1, LV_SCR_LOAD_ANIM_FADE_ON, 500, 0, &ui_Screen1_screen_init);
+        lv_obj_clear_state(ui_Spinner1,LV_STATE_DISABLED);
+        lv_textarea_set_text(ui_TextArea1,"Waiting for Utopia 360");
+        lv_textarea_set_text(ui_TextArea2,"Utopia was disconnected!\n Waiting for new connection");
+      }
+      
+      //vTaskDelay(10000);
+      //lv_textarea_set_text(ui_TextArea2,"moj iny text");
     }
+    if(connected==true && wasConnected==false)
+      {
+        wasConnected=true;
+        initializeAfterConnect();
+      }
 
     if(connected && cnt==0)
     {
       cnt++;
-      Serial.println("Utopia connected");
-      
-      lv_event_t *ev=new lv_event_t();
-        ev->code=LV_EVENT_CLICKED;
-        ui_event_Screen1(ev); // Vygeneruje Event akože som klikol hlavnuobrazovku
-        GameBall myGame;
+      initializeAfterConnect();
+
+      //Serial.println("Utopia connected");
     }
 
     if(connected && cnt==1)
     {
-      
-      Serial.println("BrickFocused");
-      lv_obj_add_state(ui_PanelBlrickGame,LV_STATE_FOCUSED);
-      
-      vTaskDelay(5000);
-      Serial.println("brick defoc wolf foc");
-      lv_obj_clear_state(ui_PanelBlrickGame,LV_STATE_FOCUSED);
-      lv_obj_add_state(ui_PanelWolfGame,LV_STATE_FOCUSED);
-      vTaskDelay(5000);
-      Serial.println("wolf defoc brick foc");
-      lv_obj_clear_state(ui_PanelWolfGame,LV_STATE_FOCUSED);
-      lv_obj_add_state(ui_PanelBlrickGame,LV_STATE_FOCUSED);
-      vTaskDelay(10000);
-      Serial.println("Brick Clicked");
-      lv_event_t *ev=new lv_event_t();
-      ev->code=LV_EVENT_CLICKED;
-      ui_event_PanelBlrickGame(ev); // Vygeneruje Event akože som klikol hlavnuobrazovku
-      cnt++;
-
-      
+      ;
     }
 
         if(connected && cnt==2)
@@ -544,8 +554,15 @@ void MyBluetooth(void * param)
   pBLEScan->start(30);
   for(;;)
   {
-      vTaskDelay(500);
-      if (doConnect == true) {
+    if(pClient->isConnected()==false && connected==true)
+    {
+      Serial.println("MyBluetooth -> isCOnnected false");
+      pClient->disconnect();
+      connected=false;
+    }
+    vTaskDelay(500);
+    if (doConnect == true) 
+    {
       //Serial.printf("Start connecting to %s\n",pServerAddress->toString());
       if (connectToServer(*pServerAddress)) {
         Serial.println("We are now connected to the BLE Server.");

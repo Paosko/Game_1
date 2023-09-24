@@ -8,48 +8,35 @@
 void ui_Menu_screen_init(void)
 {
 ui_Menu = lv_obj_create(NULL);
-lv_obj_clear_flag( ui_Menu, LV_OBJ_FLAG_CLICKABLE | LV_OBJ_FLAG_PRESS_LOCK | LV_OBJ_FLAG_SCROLLABLE );    /// Flags
-lv_obj_set_style_bg_color(ui_Menu, lv_color_hex(0x565656), LV_PART_MAIN | LV_STATE_DEFAULT );
-lv_obj_set_style_bg_opa(ui_Menu, 255, LV_PART_MAIN| LV_STATE_DEFAULT);
+lv_obj_clear_flag( ui_Menu, LV_OBJ_FLAG_SCROLLABLE );    /// Flags
 
 ui_PanelBlrickGame = lv_obj_create(ui_Menu);
 lv_obj_set_width( ui_PanelBlrickGame, 150);
 lv_obj_set_height( ui_PanelBlrickGame, 85);
 lv_obj_set_x( ui_PanelBlrickGame, -100 );
-lv_obj_set_y( ui_PanelBlrickGame, -5 );
+lv_obj_set_y( ui_PanelBlrickGame, 0 );
 lv_obj_set_align( ui_PanelBlrickGame, LV_ALIGN_CENTER );
 lv_obj_clear_flag( ui_PanelBlrickGame, LV_OBJ_FLAG_SCROLLABLE );    /// Flags
-lv_obj_set_style_clip_corner(ui_PanelBlrickGame, true, LV_PART_MAIN| LV_STATE_DEFAULT);
 lv_obj_set_style_bg_img_src( ui_PanelBlrickGame, &ui_img_brickball_png, LV_PART_MAIN | LV_STATE_DEFAULT );
-lv_obj_set_style_radius(ui_PanelBlrickGame, 0, LV_PART_MAIN| LV_STATE_PRESSED);
-lv_obj_set_style_bg_color(ui_PanelBlrickGame, lv_color_hex(0x0600C2), LV_PART_MAIN | LV_STATE_PRESSED );
-lv_obj_set_style_bg_opa(ui_PanelBlrickGame, 255, LV_PART_MAIN| LV_STATE_PRESSED);
-lv_obj_set_style_bg_grad_color(ui_PanelBlrickGame, lv_color_hex(0xE20000), LV_PART_MAIN | LV_STATE_PRESSED );
-lv_obj_set_style_clip_corner(ui_PanelBlrickGame, true, LV_PART_MAIN| LV_STATE_FOCUSED);
-lv_obj_set_style_shadow_color(ui_PanelBlrickGame, lv_color_hex(0xA50202), LV_PART_MAIN | LV_STATE_FOCUSED );
+lv_obj_set_style_bg_img_src( ui_PanelBlrickGame, &ui_img_brickball_png, LV_PART_MAIN | LV_STATE_FOCUSED );
+lv_obj_set_style_shadow_color(ui_PanelBlrickGame, lv_color_hex(0x00FF08), LV_PART_MAIN | LV_STATE_FOCUSED );
 lv_obj_set_style_shadow_opa(ui_PanelBlrickGame, 255, LV_PART_MAIN| LV_STATE_FOCUSED);
 lv_obj_set_style_shadow_width(ui_PanelBlrickGame, 50, LV_PART_MAIN| LV_STATE_FOCUSED);
-lv_obj_set_style_shadow_spread(ui_PanelBlrickGame, 20, LV_PART_MAIN| LV_STATE_FOCUSED);
+lv_obj_set_style_shadow_spread(ui_PanelBlrickGame, 25, LV_PART_MAIN| LV_STATE_FOCUSED);
 
 ui_PanelWolfGame = lv_obj_create(ui_Menu);
 lv_obj_set_width( ui_PanelWolfGame, 150);
 lv_obj_set_height( ui_PanelWolfGame, 85);
 lv_obj_set_x( ui_PanelWolfGame, 100 );
-lv_obj_set_y( ui_PanelWolfGame, -7 );
+lv_obj_set_y( ui_PanelWolfGame, 0 );
 lv_obj_set_align( ui_PanelWolfGame, LV_ALIGN_CENTER );
 lv_obj_clear_flag( ui_PanelWolfGame, LV_OBJ_FLAG_SCROLLABLE );    /// Flags
-lv_obj_set_style_clip_corner(ui_PanelWolfGame, true, LV_PART_MAIN| LV_STATE_DEFAULT);
 lv_obj_set_style_bg_img_src( ui_PanelWolfGame, &ui_img_wolf_png, LV_PART_MAIN | LV_STATE_DEFAULT );
-lv_obj_set_style_radius(ui_PanelWolfGame, 0, LV_PART_MAIN| LV_STATE_PRESSED);
-lv_obj_set_style_bg_color(ui_PanelWolfGame, lv_color_hex(0x0600C2), LV_PART_MAIN | LV_STATE_PRESSED );
-lv_obj_set_style_bg_opa(ui_PanelWolfGame, 255, LV_PART_MAIN| LV_STATE_PRESSED);
-lv_obj_set_style_bg_grad_color(ui_PanelWolfGame, lv_color_hex(0xE20000), LV_PART_MAIN | LV_STATE_PRESSED );
-lv_obj_set_style_clip_corner(ui_PanelWolfGame, true, LV_PART_MAIN| LV_STATE_FOCUSED);
 lv_obj_set_style_bg_img_src( ui_PanelWolfGame, &ui_img_wolf_png, LV_PART_MAIN | LV_STATE_FOCUSED );
-lv_obj_set_style_shadow_color(ui_PanelWolfGame, lv_color_hex(0xA50202), LV_PART_MAIN | LV_STATE_FOCUSED );
+lv_obj_set_style_shadow_color(ui_PanelWolfGame, lv_color_hex(0x00FF08), LV_PART_MAIN | LV_STATE_FOCUSED );
 lv_obj_set_style_shadow_opa(ui_PanelWolfGame, 255, LV_PART_MAIN| LV_STATE_FOCUSED);
 lv_obj_set_style_shadow_width(ui_PanelWolfGame, 50, LV_PART_MAIN| LV_STATE_FOCUSED);
-lv_obj_set_style_shadow_spread(ui_PanelWolfGame, 20, LV_PART_MAIN| LV_STATE_FOCUSED);
+lv_obj_set_style_shadow_spread(ui_PanelWolfGame, 25, LV_PART_MAIN| LV_STATE_FOCUSED);
 
 lv_obj_add_event_cb(ui_PanelBlrickGame, ui_event_PanelBlrickGame, LV_EVENT_ALL, NULL);
 lv_obj_add_event_cb(ui_PanelWolfGame, ui_event_PanelWolfGame, LV_EVENT_ALL, NULL);

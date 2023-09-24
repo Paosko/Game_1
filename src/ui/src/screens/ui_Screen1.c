@@ -16,7 +16,18 @@ lv_obj_set_height( ui_Spinner1, 80);
 lv_obj_set_x( ui_Spinner1, -7 );
 lv_obj_set_y( ui_Spinner1, -30 );
 lv_obj_set_align( ui_Spinner1, LV_ALIGN_CENTER );
-lv_obj_clear_flag( ui_Spinner1, LV_OBJ_FLAG_CLICKABLE );    /// Flags
+lv_obj_clear_flag( ui_Spinner1, LV_OBJ_FLAG_CLICKABLE | LV_OBJ_FLAG_GESTURE_BUBBLE | LV_OBJ_FLAG_SNAPPABLE | LV_OBJ_FLAG_SCROLL_CHAIN );    /// Flags
+lv_obj_set_style_radius(ui_Spinner1, 50, LV_PART_MAIN| LV_STATE_DISABLED);
+lv_obj_set_style_bg_color(ui_Spinner1, lv_color_hex(0x00FF36), LV_PART_MAIN | LV_STATE_DISABLED );
+lv_obj_set_style_bg_opa(ui_Spinner1, 255, LV_PART_MAIN| LV_STATE_DISABLED);
+lv_obj_set_style_bg_grad_color(ui_Spinner1, lv_color_hex(0x00FF36), LV_PART_MAIN | LV_STATE_DISABLED );
+lv_obj_set_style_outline_color(ui_Spinner1, lv_color_hex(0x00FF36), LV_PART_MAIN | LV_STATE_DISABLED );
+lv_obj_set_style_outline_opa(ui_Spinner1, 255, LV_PART_MAIN| LV_STATE_DISABLED);
+lv_obj_set_style_arc_color(ui_Spinner1, lv_color_hex(0x00FF36), LV_PART_MAIN | LV_STATE_DISABLED );
+lv_obj_set_style_arc_opa(ui_Spinner1, 255, LV_PART_MAIN| LV_STATE_DISABLED);
+
+lv_obj_set_style_arc_color(ui_Spinner1, lv_color_hex(0x00FF36), LV_PART_INDICATOR | LV_STATE_DISABLED );
+lv_obj_set_style_arc_opa(ui_Spinner1, 255, LV_PART_INDICATOR| LV_STATE_DISABLED);
 
 ui_TextArea1 = lv_textarea_create(ui_Screen1);
 lv_obj_set_width( ui_TextArea1, 300);
@@ -24,8 +35,9 @@ lv_obj_set_height( ui_TextArea1, 40);
 lv_obj_set_x( ui_TextArea1, 0 );
 lv_obj_set_y( ui_TextArea1, -110 );
 lv_obj_set_align( ui_TextArea1, LV_ALIGN_CENTER );
-lv_textarea_set_text(ui_TextArea1,"Waiting for Bluetooth Connection");
+lv_textarea_set_text(ui_TextArea1,"Waiting for Utopia 360");
 lv_textarea_set_placeholder_text(ui_TextArea1,"Placeholder...");
+lv_obj_set_style_text_align(ui_TextArea1, LV_TEXT_ALIGN_CENTER, LV_PART_MAIN| LV_STATE_DEFAULT);
 
 
 
@@ -35,11 +47,12 @@ lv_obj_set_height( ui_TextArea2, 102);
 lv_obj_set_x( ui_TextArea2, 0 );
 lv_obj_set_y( ui_TextArea2, 85 );
 lv_obj_set_align( ui_TextArea2, LV_ALIGN_CENTER );
-lv_textarea_set_text(ui_TextArea2,"Some Information from ESP32");
+lv_textarea_set_text(ui_TextArea2,"Connecting...");
 lv_textarea_set_placeholder_text(ui_TextArea2,"Placeholder...");
 
 
 
+lv_obj_add_event_cb(ui_TextArea2, ui_event_TextArea2, LV_EVENT_ALL, NULL);
 lv_obj_add_event_cb(ui_Screen1, ui_event_Screen1, LV_EVENT_ALL, NULL);
 
 }

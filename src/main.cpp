@@ -153,64 +153,101 @@ void BallMove(void *p)
 }
 uint32_t JoystickMap(uint32_t Joystick)
 {
-  if(Joystick==144)
-  {return LV_KEY_LEFT;}
-
-  if(Joystick==16)
+  if(Joystick==144 || Joystick==160)
   {return LV_KEY_RIGHT;}
 
-  if(Joystick==64)
-  {return LV_KEY_UP;}
+  if(Joystick==16 || Joystick==0)
+  {return LV_KEY_LEFT;}
 
-  if(Joystick==96)
+  if(Joystick==64 || Joystick==128)
   {return LV_KEY_DOWN;}
 
-  return 3;
+  if(Joystick==96 || Joystick==32)
+  {return LV_KEY_UP;}
+
+  return LV_KEY_END;
+}
+
+uint32_t TlacidkoMap(uint8_t Tlacidko)
+{
+  if(Tlacidko==2)
+  {return LV_KEY_ENTER;} //A
+  if(Tlacidko==8)
+  {return LV_KEY_BACKSPACE;}  //C
+  if(Tlacidko==1)
+  {return LV_KEY_PREV;} //B
+  if(Tlacidko==16)
+  {return LV_KEY_NEXT;} //D
+  if(Tlacidko==64)  
+  {return LV_KEY_HOME;} //Y spodne
+  if(Tlacidko==128)
+  {return LV_KEY_DEL;} //X vrchne
+
+  return LV_KEY_END;
 }
 
 //When the BLE Server sends a new Joystick reading with the notify property
-static void JoystickNotifyCallback(BLERemoteCharacteristic* pBLERemoteCharacteristic, 
-                                        uint8_t* pData, size_t length, bool isNotify) {
-                                          
-  
+static void JoystickNotifyCallback(BLERemoteCharacteristic* pBLERemoteCharacteristic, uint8_t* pData, size_t length, bool isNotify) 
+{
+
   static BleKey Klavesa;
-  //store Joystick value
-  //JoystickChar = (char*)pData;
-    static uint32_t Joystick=80; //144 vlavo, 16 vpravo, 64 hore, 96 dole, 80 vypnute
-    static bool A=false;
-    static bool B=false;
-    static bool C=false;
-    static bool D=false;
-    static bool X=false;
-    static bool Y=false;
+  static uint32_t Joystick=80; //144,160 vpravo, 16,0 vlavo, 64,128 dole, 96,32 hore, 80 vypnute pohlad na ovladac ak je joystick vlavo
+  static uint8_t Tlacidlo=0;  //bin hodnota: c,a,0,b,d,0,y,x (x-> horne, y -> spodne)
 
-      /*Serial.print("key: ");
-      Serial.println(pData[0],BIN);
-      Serial.print("Joy: ");
-      Serial.println(pData[1],BIN);*/
+  /*Serial.print("key: ");
+  Serial.println(pData[0]);
+  Serial.print("Joy: ");
+  Serial.println(pData[1]);*/
 
-      if(pData[1]!=Joystick) //Ak je zmena na Joysticku
+  if(pData[1]!=Joystick) //Ak je zmena na Joysticku
+  {
+
+    if(Joystick!=80) // pokiaľ sa predch hodnota !=nestlačene, zruš stlačene
+    {
+      Klavesa.Key=JoystickMap(Joystick);
+      Klavesa.State=false;
+      if(xQueueSend(BleKeyboardQueue,(void*)&Klavesa,10)!=pdTRUE)
+        {Serial.println("Queue sending problem ");}
+    }
+    
+    Joystick=pData[1]; // Uloz novu hodnotu
+    
+    if(Joystick!=80)  //Ak sa nova hodnota nerovna nestlacene tak ju nastav
+    { 
+      Klavesa.Key=JoystickMap(Joystick);
+      Klavesa.State=true;
+      if(xQueueSend(BleKeyboardQueue,(void*)&Klavesa,10)!=pdTRUE)
+        {Serial.println("Queue sending problem ");}
+    }
+  }
+  
+   if(pData[0]!=Tlacidlo) //Ak je zmena na klavese
+   {
+      for (uint8_t x=0x80;x!=0;x>>=1) // x-> 128,64,32,16,8,4,2,1
       {
-
-        if(Joystick!=80) // pokiaľ sa predch hodnota !=nestlačene, zruš stlačene
+       /* Serial.print("x:");
+        Serial.print(x);
+        Serial.print(" Tlac&x:");
+        Serial.print(Tlacidlo&x);
+        Serial.print(" pData[0]&x:");
+        Serial.print(pData[0]&x);*/
+        
+        if((Tlacidlo&x) != (pData[0]&x)) //pokial sa stara hodnota bitu nerovna novej
         {
-          Klavesa.Key=JoystickMap(Joystick);
-          Klavesa.State=false;
+          Klavesa.Key=TlacidkoMap(x);
+          //Serial.print("posielam Tlacitko: ");
+         // Serial.println(Klavesa.Key);
+          Klavesa.State=pData[0]&x;
           if(xQueueSend(BleKeyboardQueue,(void*)&Klavesa,10)!=pdTRUE)
             {Serial.println("Queue sending problem ");}
         }
-        
-        Joystick=pData[1]; // Uloz novu hodnotu
-        
-        if(Joystick!=80)  //Ak sa nova hodnota nerovna nestlacene tak ju nastav
-          Klavesa.Key=JoystickMap(Joystick);
-          Klavesa.State=true;
-          if(xQueueSend(BleKeyboardQueue,(void*)&Klavesa,10)!=pdTRUE)
-              {Serial.println("Queue sending problem ");}
-        
+        else
+        {
+          //Serial.println(" No change");
+        }
       }
-  
-  
+      Tlacidlo=pData[0];
+   } 
   
 }
 
@@ -566,6 +603,7 @@ void setup()
     Serial.println( LVGL_Arduino );
     Serial.println( "I am LVGL_Arduino" );
 
+      
 
     //
     xTaskCreate(MySerialDebug,"MySerialDebug",1024,NULL,1,NULL);

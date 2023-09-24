@@ -498,7 +498,7 @@
                 "ARDUINO=10812",
                 "ARDUINO_VARIANT=\"d1_mini32\"",
                 "ARDUINO_BOARD=\"WEMOS D1 MINI ESP32\"",
-                "ARDUINO_PARTITION_no_ota",
+                "ARDUINO_PARTITION_partition_custom",
                 ""
             ],
             "cStandard": "gnu99",

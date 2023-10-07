@@ -26,23 +26,63 @@ void ui_event_PanelBlrickGame( lv_event_t * e);
 lv_obj_t *ui_PanelBlrickGame;
 void ui_event_PanelWolfGame( lv_event_t * e);
 lv_obj_t *ui_PanelWolfGame;
+void ui_event_SettingsButton( lv_event_t * e);
+lv_obj_t *ui_SettingsButton;
+lv_obj_t *ui_Label3;
 
 
 // SCREEN: ui_BrickBall
 void ui_BrickBall_screen_init(void);
 void ui_event_BrickBall( lv_event_t * e);
 lv_obj_t *ui_BrickBall;
-lv_obj_t *ui_Panel2;
+lv_obj_t *ui_GameArea1;
 lv_obj_t *ui_Brick;
 lv_obj_t *ui_Ball;
 lv_obj_t *ui_Nest;
+lv_obj_t *ui_StatusPanelBrick;
 
 
 // SCREEN: ui_Wolf
 void ui_Wolf_screen_init(void);
 void ui_event_Wolf( lv_event_t * e);
 lv_obj_t *ui_Wolf;
+lv_obj_t *ui_GameArea2;
+lv_obj_t *ui_Image2;
+lv_obj_t *ui_Ami;
+lv_obj_t *ui_Image6;
+lv_obj_t *ui_StatusPanelWolf;
+
+
+// SCREEN: ui_Settings
+void ui_Settings_screen_init(void);
+lv_obj_t *ui_Settings;
+lv_obj_t *ui_SettingsLable;
+lv_obj_t *ui_VolumePanel;
+lv_obj_t *ui_LabelVolMax1;
+lv_obj_t *ui_LabelVolMax;
+lv_obj_t *ui_VolumeSlider;
+lv_obj_t *ui_LabelVolume;
+lv_obj_t *ui_PanelGameSettings;
+lv_obj_t *ui_LabelGameScoreReset;
+void ui_event_BrickScoreResetButton( lv_event_t * e);
+lv_obj_t *ui_BrickScoreResetButton;
+lv_obj_t *ui_Label1;
+lv_obj_t *ui_BrickBestScoreSettingsValue;
+lv_obj_t *ui_WolfBestScoreSettingsValue;
+void ui_event_BrickScoreResetButton1( lv_event_t * e);
+lv_obj_t *ui_BrickScoreResetButton1;
+lv_obj_t *ui_Label2;
+void ui_event_BackSettingsButton( lv_event_t * e);
+lv_obj_t *ui_BackSettingsButton;
+lv_obj_t *ui_Label12;
+lv_obj_t *ui_PanelDeviceInfo;
+lv_obj_t *ui_LabelDeviceInfo;
 lv_obj_t *ui____initial_actions0;
+const lv_img_dsc_t *ui_imgset_wolf[1] = {&ui_img_wolf2_png};
+const lv_img_dsc_t *ui_imgset_wolflayout[3] = {&ui_img_wolflayout2_png, &ui_img_wolflayout3_png, &ui_img_wolflayout7_png};
+const lv_img_dsc_t *ui_imgset_ami[3] = {&ui_img_ami1_png, &ui_img_ami2_png, &ui_img_ami3_png};
+const lv_img_dsc_t *ui_imgset_158987798[1] = {&ui_img_210898296};
+const lv_img_dsc_t *ui_imgset_1601799055[2] = {&ui_img_1771879469, &ui_img_391577990};
 
 ///////////////////// TEST LVGL SETTINGS ////////////////////
 #if LV_COLOR_DEPTH != 16
@@ -61,7 +101,8 @@ if ( event_code == LV_EVENT_CLICKED) {
     lv_group_remove_all_objs(MyControlGroup);
     lv_group_add_obj(MyControlGroup,ui_PanelWolfGame);
     lv_group_add_obj(MyControlGroup,ui_PanelBlrickGame);
-    _ui_screen_change( &ui_Menu, LV_SCR_LOAD_ANIM_NONE, 500, 0, &ui_Menu_screen_init);
+    lv_group_add_obj(MyControlGroup,ui_SettingsButton);
+      _ui_screen_change( &ui_Menu, LV_SCR_LOAD_ANIM_NONE, 500, 0, &ui_Menu_screen_init);
 }
 }
 void ui_event_Menu( lv_event_t * e) {
@@ -85,6 +126,15 @@ if ( event_code == LV_EVENT_CLICKED) {
       _ui_screen_change( &ui_Wolf, LV_SCR_LOAD_ANIM_MOVE_RIGHT, 500, 0, &ui_Wolf_screen_init);
 }
 }
+void ui_event_SettingsButton( lv_event_t * e) {
+    lv_event_code_t event_code = lv_event_get_code(e);lv_obj_t * target = lv_event_get_target(e);
+if ( event_code == LV_EVENT_CLICKED) {
+    lv_group_remove_all_objs(MyControlGroup);
+    _ui_screen_delete(ui_Screen1);
+    _ui_screen_delete(ui_Menu);
+      _ui_screen_change( &ui_Settings, LV_SCR_LOAD_ANIM_NONE, 500, 0, &ui_Settings_screen_init);
+}
+}
 void ui_event_BrickBall( lv_event_t * e) {
     lv_event_code_t event_code = lv_event_get_code(e);lv_obj_t * target = lv_event_get_target(e);
 if ( event_code == LV_EVENT_CLICKED) {
@@ -99,11 +149,30 @@ if ( event_code == LV_EVENT_CLICKED) {
       _ui_screen_change( &ui_Screen1, LV_SCR_LOAD_ANIM_FADE_ON, 500, 0, &ui_Screen1_screen_init);
 }
 }
+void ui_event_BrickScoreResetButton( lv_event_t * e) {
+    lv_event_code_t event_code = lv_event_get_code(e);lv_obj_t * target = lv_event_get_target(e);
+if ( event_code == LV_EVENT_CLICKED) {
+      ResetScoreBrickFunction( e );
+}
+}
+void ui_event_BrickScoreResetButton1( lv_event_t * e) {
+    lv_event_code_t event_code = lv_event_get_code(e);lv_obj_t * target = lv_event_get_target(e);
+if ( event_code == LV_EVENT_CLICKED) {
+      ResetScoreWolfFunction( e );
+}
+}
+void ui_event_BackSettingsButton( lv_event_t * e) {
+    lv_event_code_t event_code = lv_event_get_code(e);lv_obj_t * target = lv_event_get_target(e);
+if ( event_code == LV_EVENT_CLICKED) {
+      _ui_screen_change( &ui_Menu, LV_SCR_LOAD_ANIM_NONE, 500, 0, &ui_Menu_screen_init);
+}
+}
 
 ///////////////////// SCREENS ////////////////////
 
 void ui_init( void )
-{
+{LV_EVENT_GET_COMP_CHILD = lv_event_register_id();
+
 lv_disp_t *dispp = lv_disp_get_default();
 lv_theme_t *theme = lv_theme_default_init(dispp, lv_palette_main(LV_PALETTE_BLUE), lv_palette_main(LV_PALETTE_RED), false, LV_FONT_DEFAULT);
 lv_disp_set_theme(dispp, theme);
@@ -111,6 +180,7 @@ ui_Screen1_screen_init();
 ui_Menu_screen_init();
 ui_BrickBall_screen_init();
 ui_Wolf_screen_init();
+ui_Settings_screen_init();
 ui____initial_actions0 = lv_obj_create(NULL);
 lv_disp_load_scr( ui_Screen1);
 }

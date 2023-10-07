@@ -10,6 +10,7 @@
 
 //FreeRtos Config
 static SemaphoreHandle_t mutex;
+static SemaphoreHandle_t xGuiSemaphore;
 TaskHandle_t LCDTask;
 TaskHandle_t BleTask;
 
@@ -508,7 +509,11 @@ void lv_timer_han(void *param)
         //taskYIELD();
 
             //Serial.printf("LV time handler needs to be called:%d\n",);
-            lv_timer_handler_run_in_period(5);
+            if (pdTRUE == xSemaphoreTake(xGuiSemaphore, portMAX_DELAY)) {
+            lv_task_handler();
+            xSemaphoreGive(xGuiSemaphore);
+       }
+           // lv_timer_handler_run_in_period(5);
             
             vTaskDelay(5);
 
@@ -520,11 +525,15 @@ void lv_timer_han(void *param)
 ///Uvodna Obrazovka, co sa napise a nastavi ked sa Utopia pripoji
 void initializeAfterConnect()
 {
-  lv_obj_add_state(ui_Spinner1,LV_STATE_DISABLED);
-  lv_textarea_set_text(ui_TextArea1,"Utopia Connected");
-  lv_textarea_set_text(ui_TextArea2,"Press 'A' key for continue");
-  lv_group_add_obj(MyControlGroup,ui_TextArea2);
-  lv_indev_set_group(KeyDriver,MyControlGroup);
+  if (pdTRUE == xSemaphoreTake(xGuiSemaphore, portMAX_DELAY)) {
+    lv_obj_add_state(ui_Spinner1,LV_STATE_DISABLED);
+    lv_textarea_set_text(ui_TextArea1,"Utopia Connected");
+    lv_textarea_set_text(ui_TextArea2,"Press 'A' key for continue");
+    lv_group_add_obj(MyControlGroup,ui_TextArea2);
+    lv_indev_set_group(KeyDriver,MyControlGroup);
+    xSemaphoreGive(xGuiSemaphore);
+  }
+
 
 }
 
@@ -534,7 +543,11 @@ void lv_exec(void *param)
  //   static int cnt=0;
   Serial.print("Init used Stack in task lv_exec:");
   Serial.println(uxTaskGetStackHighWaterMark(NULL)); 
-  MyControlGroup=lv_group_create(); 
+  
+  if (pdTRUE == xSemaphoreTake(xGuiSemaphore, portMAX_DELAY)) {
+    MyControlGroup=lv_group_create(); 
+    xSemaphoreGive(xGuiSemaphore);
+  }
 
   
 
@@ -548,13 +561,12 @@ void lv_exec(void *param)
       
       if(wasConnected) // ak bol pripojeny ale uz nie je -> vratit na prvy screen
       {
-        Serial.println("Disconnected ->init screen");
-        wasConnected=false;
         lv_group_remove_all_objs(MyControlGroup);
         _ui_screen_change( &ui_Screen1, LV_SCR_LOAD_ANIM_FADE_ON, 500, 0, &ui_Screen1_screen_init);
         lv_obj_clear_state(ui_Spinner1,LV_STATE_DISABLED);
         lv_textarea_set_text(ui_TextArea1,"Waiting for Utopia 360");
         lv_textarea_set_text(ui_TextArea2,"Utopia was disconnected!\n Waiting for new connection");
+        xSemaphoreGive(xGuiSemaphore);
       }
       
       //vTaskDelay(10000);
@@ -581,9 +593,13 @@ void lv_exec(void *param)
 
         if(connected && Roller==2)
     {
+      if(wasConnected) // ak bol pripojeny ale uz nie je -> vratit na prvy screen
+      {
         xTaskCreate(BallMove,"BallMove",5000,NULL,1,NULL);
         lv_obj_set_x(ui_Ball,(lv_coord_t)MojaPrvaHra.HP.Lopty[0].BallActualPositionX);
         lv_obj_set_y(ui_Ball,(lv_coord_t)MojaPrvaHra.HP.Lopty[0].BallActualPositionY);
+      }
+
       
     }
   }
@@ -622,6 +638,8 @@ void setup()
     Serial.print("init Heap:");
     Serial.println(xPortGetFreeHeapSize());
     Serial.printf("1. Mun of tasks:%d\n",uxTaskGetNumberOfTasks());
+    xGuiSemaphore=xSemaphoreCreateBinary();
+    xSemaphoreGive(xGuiSemaphore);
     BleKeyboardQueue=xQueueCreate(10, sizeof(BleKey));
     String LVGL_Arduino = "Hello Arduino! ";
     LVGL_Arduino += String('V') + lv_version_major() + "." + lv_version_minor() + "." + lv_version_patch();
@@ -635,7 +653,7 @@ void setup()
     xTaskCreate(MySerialDebug,"MySerialDebug",1024,NULL,1,NULL);
     mutex=xSemaphoreCreateMutex();
     Serial.printf("2. Mun of tasks:%d\n",uxTaskGetNumberOfTasks());
-    xTaskCreatePinnedToCore(lv_timer_han,"lv_timer_handler",6000,NULL,3,&LCDTask,0);
+    xTaskCreatePinnedToCore(lv_timer_han,"lv_timer_handler",15000,NULL,3,&LCDTask,0);
     Serial.printf("3. Mun of tasks:%d\n",uxTaskGetNumberOfTasks());
     xTaskCreatePinnedToCore(lv_exec,"lv_exec",4000,NULL,3,NULL,0);
     Serial.printf("4. Mun of tasks:%d\n",uxTaskGetNumberOfTasks());

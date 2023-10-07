@@ -9,6 +9,61 @@ void ui_Wolf_screen_init(void)
 {
 ui_Wolf = lv_obj_create(NULL);
 lv_obj_clear_flag( ui_Wolf, LV_OBJ_FLAG_SCROLLABLE );    /// Flags
+lv_obj_set_style_bg_color(ui_Wolf, lv_color_hex(0x4C4E5B), LV_PART_MAIN | LV_STATE_DEFAULT );
+lv_obj_set_style_bg_opa(ui_Wolf, 255, LV_PART_MAIN| LV_STATE_DEFAULT);
+lv_obj_set_style_bg_grad_color(ui_Wolf, lv_color_hex(0x393B46), LV_PART_MAIN | LV_STATE_DEFAULT );
+lv_obj_set_style_bg_main_stop(ui_Wolf, 0, LV_PART_MAIN| LV_STATE_DEFAULT);
+lv_obj_set_style_bg_grad_stop(ui_Wolf, 255, LV_PART_MAIN| LV_STATE_DEFAULT);
+lv_obj_set_style_bg_grad_dir(ui_Wolf, LV_GRAD_DIR_VER, LV_PART_MAIN| LV_STATE_DEFAULT);
+
+ui_GameArea2 = lv_obj_create(ui_Wolf);
+lv_obj_set_width( ui_GameArea2, 450);
+lv_obj_set_height( ui_GameArea2, 270);
+lv_obj_set_x( ui_GameArea2, 0 );
+lv_obj_set_y( ui_GameArea2, 8 );
+lv_obj_set_align( ui_GameArea2, LV_ALIGN_CENTER );
+lv_obj_clear_flag( ui_GameArea2, LV_OBJ_FLAG_SCROLLABLE );    /// Flags
+lv_obj_set_style_border_color(ui_GameArea2, lv_color_hex(0x000000), LV_PART_MAIN | LV_STATE_DEFAULT );
+lv_obj_set_style_border_opa(ui_GameArea2, 255, LV_PART_MAIN| LV_STATE_DEFAULT);
+lv_obj_set_style_border_width(ui_GameArea2, 0, LV_PART_MAIN| LV_STATE_DEFAULT);
+lv_obj_set_style_outline_color(ui_GameArea2, lv_color_hex(0x000000), LV_PART_MAIN | LV_STATE_DEFAULT );
+lv_obj_set_style_outline_opa(ui_GameArea2, 255, LV_PART_MAIN| LV_STATE_DEFAULT);
+lv_obj_set_style_outline_width(ui_GameArea2, 0, LV_PART_MAIN| LV_STATE_DEFAULT);
+lv_obj_set_style_outline_pad(ui_GameArea2, 0, LV_PART_MAIN| LV_STATE_DEFAULT);
+
+ui_Image2 = lv_img_create(ui_GameArea2);
+lv_img_set_src(ui_Image2, &ui_img_wolfbg_png);
+lv_obj_set_width( ui_Image2, LV_SIZE_CONTENT);  /// 1
+lv_obj_set_height( ui_Image2, LV_SIZE_CONTENT);   /// 1
+lv_obj_set_align( ui_Image2, LV_ALIGN_CENTER );
+lv_obj_add_flag( ui_Image2, LV_OBJ_FLAG_ADV_HITTEST );   /// Flags
+lv_obj_clear_flag( ui_Image2, LV_OBJ_FLAG_SCROLLABLE );    /// Flags
+
+ui_Ami = lv_img_create(ui_GameArea2);
+lv_img_set_src(ui_Ami, &ui_img_ami3_png);
+lv_obj_set_width( ui_Ami, LV_SIZE_CONTENT);  /// 1
+lv_obj_set_height( ui_Ami, LV_SIZE_CONTENT);   /// 1
+lv_obj_set_x( ui_Ami, 8 );
+lv_obj_set_y( ui_Ami, 73 );
+lv_obj_set_align( ui_Ami, LV_ALIGN_CENTER );
+lv_obj_add_flag( ui_Ami, LV_OBJ_FLAG_ADV_HITTEST );   /// Flags
+lv_obj_clear_flag( ui_Ami, LV_OBJ_FLAG_SCROLLABLE );    /// Flags
+
+ui_Image6 = lv_img_create(ui_GameArea2);
+lv_img_set_src(ui_Image6, &ui_img_391577990);
+lv_obj_set_width( ui_Image6, LV_SIZE_CONTENT);  /// 1
+lv_obj_set_height( ui_Image6, LV_SIZE_CONTENT);   /// 1
+lv_obj_set_x( ui_Image6, 19 );
+lv_obj_set_y( ui_Image6, 73 );
+lv_obj_add_flag( ui_Image6, LV_OBJ_FLAG_ADV_HITTEST );   /// Flags
+lv_obj_clear_flag( ui_Image6, LV_OBJ_FLAG_SCROLLABLE );    /// Flags
+
+ui_StatusPanelWolf = ui_StatusPanel_create(ui_Wolf);
+lv_obj_set_x( ui_StatusPanelWolf, -1 );
+lv_obj_set_y( ui_StatusPanelWolf, -140 );
+
+
+
 
 lv_obj_add_event_cb(ui_Wolf, ui_event_Wolf, LV_EVENT_ALL, NULL);
 

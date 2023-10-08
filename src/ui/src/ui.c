@@ -183,4 +183,5 @@ ui_Wolf_screen_init();
 ui_Settings_screen_init();
 ui____initial_actions0 = lv_obj_create(NULL);
 lv_disp_load_scr( ui_Screen1);
+//lv_disp_load_scr(ui_Settings);
 }

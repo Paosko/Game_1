@@ -11,15 +11,17 @@
 //FreeRtos Config
 static SemaphoreHandle_t mutex;
 static SemaphoreHandle_t xGuiSemaphore;
-TaskHandle_t LCDTask;
-TaskHandle_t BleTask;
+
+TaskHandle_t taskHandles[10];
+
 
 //Debug part
 String MySerInput;    //Debug output nedorieseny
 
 //Funkcne premenne
 static QueueHandle_t BleKeyboardQueue; // Queue pre Utopiu
-lv_indev_t * KeyDriver; // Driver
+lv_indev_t * KeyDriver; // BLE Driver
+lv_indev_t * TouchDriver; // dotykovka
 int Roller=0; // hovori ktora obrazovka je spustena
 
 
@@ -328,11 +330,12 @@ static const uint16_t screenHeight = 320;
 
 static lv_disp_draw_buf_t draw_buf;
 static lv_color_t buf[ screenWidth * screenHeight / 10 ];
-
+//static lv_color_t* buf2=(lv_color_t*)ps_malloc(screenWidth * screenHeight / 10);
 TFT_eSPI tft = TFT_eSPI(screenWidth, screenHeight); /* TFT instance */
 
 
 static lv_indev_drv_t indev_drv;
+static lv_indev_drv_t indev_drv2;
 static lv_disp_drv_t disp_drv;
 
 #if LV_USE_LOG != 0
@@ -388,7 +391,32 @@ void my_Keyboard_read( lv_indev_drv_t * indev_driver, lv_indev_data_t * data )
   //return false; /*No buffering now so no more data read*/
 }
 
+void myTOuch_read(lv_indev_drv_t *indev_driver, lv_indev_data_t * data  )
+{
 
+    uint16_t touchX, touchY;
+
+    bool touched = tft.getTouch( &touchX, &touchY, 600 );
+
+    if( !touched )
+    {
+        data->state = LV_INDEV_STATE_REL;
+    }
+    else
+    {
+        data->state = LV_INDEV_STATE_PR;
+
+        
+        data->point.x = touchX;
+        data->point.y = touchY;
+
+        Serial.print( "Data x " );
+        Serial.println( touchX );
+
+        Serial.print( "Data y " );
+        Serial.println( touchY );
+    }
+}
 
 
 
@@ -470,14 +498,16 @@ class GameBall
 // Vykreslovanie displayu
 void lv_timer_han(void *param)
 {
-    lv_init();
+  if (pdTRUE == xSemaphoreTake(xGuiSemaphore, portMAX_DELAY)) {
+      
+      lv_init();
 
-#if LV_USE_LOG != 0
-    lv_log_register_print_cb( my_print ); /* register print function for debugging */
-#endif
+    #if LV_USE_LOG != 0
+        lv_log_register_print_cb( my_print ); /* register print function for debugging */
+    #endif
 
     tft.begin();          /* TFT init */
-    tft.setRotation( 3 ); /* Landscape orientation, flipped */
+    tft.setRotation( 1 ); /* Landscape orientation, flipped */
 
     lv_disp_draw_buf_init( &draw_buf, buf, NULL, screenWidth * screenHeight / 10 );
 
@@ -494,30 +524,34 @@ void lv_timer_han(void *param)
     /*Initialize the (dummy) input device driver*/
     
     lv_indev_drv_init( &indev_drv );
+    lv_indev_drv_init( &indev_drv2 );
     indev_drv.type = LV_INDEV_TYPE_KEYPAD;
     indev_drv.read_cb = my_Keyboard_read;
     KeyDriver= lv_indev_drv_register( &indev_drv );
+
+    indev_drv2.type=LV_INDEV_TYPE_POINTER;
+    indev_drv2.read_cb=myTOuch_read;
+    TouchDriver=lv_indev_drv_register(&indev_drv2);
     
 
 
 
     ui_init();
- 
-    int cnt=0;
-    for(;;)
-    {
-        //taskYIELD();
+    xSemaphoreGive(xGuiSemaphore);
+  }
+  int cnt=0;
+  for(;;)
+  {
 
-            //Serial.printf("LV time handler needs to be called:%d\n",);
-            if (pdTRUE == xSemaphoreTake(xGuiSemaphore, portMAX_DELAY)) {
-            lv_task_handler();
-            xSemaphoreGive(xGuiSemaphore);
-       }
-           // lv_timer_handler_run_in_period(5);
-            
-            vTaskDelay(5);
+  if (pdTRUE == xSemaphoreTake(xGuiSemaphore, portMAX_DELAY)) {
+    lv_task_handler();
+    xSemaphoreGive(xGuiSemaphore);
+  }
+          // lv_timer_handler_run_in_period(5);
+          
+  vTaskDelay(5);
 
-    }
+  }
 
 }
 
@@ -540,18 +574,11 @@ void initializeAfterConnect()
 ///Exekucia kodu este neviem na co vsetko ma sluzit
 void lv_exec(void *param)
 {
- //   static int cnt=0;
-  Serial.print("Init used Stack in task lv_exec:");
-  Serial.println(uxTaskGetStackHighWaterMark(NULL)); 
-  
   if (pdTRUE == xSemaphoreTake(xGuiSemaphore, portMAX_DELAY)) {
     MyControlGroup=lv_group_create(); 
     xSemaphoreGive(xGuiSemaphore);
   }
-
   
-
-
   for(;;)
   {      
   static bool wasConnected=false;  // priznak ci bol uz pripojeny alebo nie  
@@ -561,12 +588,14 @@ void lv_exec(void *param)
       
       if(wasConnected) // ak bol pripojeny ale uz nie je -> vratit na prvy screen
       {
-        lv_group_remove_all_objs(MyControlGroup);
-        _ui_screen_change( &ui_Screen1, LV_SCR_LOAD_ANIM_FADE_ON, 500, 0, &ui_Screen1_screen_init);
-        lv_obj_clear_state(ui_Spinner1,LV_STATE_DISABLED);
-        lv_textarea_set_text(ui_TextArea1,"Waiting for Utopia 360");
-        lv_textarea_set_text(ui_TextArea2,"Utopia was disconnected!\n Waiting for new connection");
-        xSemaphoreGive(xGuiSemaphore);
+        if (pdTRUE == xSemaphoreTake(xGuiSemaphore, portMAX_DELAY)) {
+          lv_group_remove_all_objs(MyControlGroup);
+          _ui_screen_change( &ui_Screen1, LV_SCR_LOAD_ANIM_FADE_ON, 500, 0, &ui_Screen1_screen_init);
+          lv_obj_clear_state(ui_Spinner1,LV_STATE_DISABLED);
+          lv_textarea_set_text(ui_TextArea1,"Waiting for Utopia 360");
+          lv_textarea_set_text(ui_TextArea2,"Utopia was disconnected!\n Waiting for new connection");
+          xSemaphoreGive(xGuiSemaphore);
+        }
       }
       
       //vTaskDelay(10000);
@@ -595,9 +624,12 @@ void lv_exec(void *param)
     {
       if(wasConnected) // ak bol pripojeny ale uz nie je -> vratit na prvy screen
       {
-        xTaskCreate(BallMove,"BallMove",5000,NULL,1,NULL);
-        lv_obj_set_x(ui_Ball,(lv_coord_t)MojaPrvaHra.HP.Lopty[0].BallActualPositionX);
-        lv_obj_set_y(ui_Ball,(lv_coord_t)MojaPrvaHra.HP.Lopty[0].BallActualPositionY);
+        if (pdTRUE == xSemaphoreTake(xGuiSemaphore, portMAX_DELAY)) {
+          xTaskCreate(BallMove,"BallMove",5000,NULL,1,NULL);
+          lv_obj_set_x(ui_Ball,(lv_coord_t)MojaPrvaHra.HP.Lopty[0].BallActualPositionX);
+          lv_obj_set_y(ui_Ball,(lv_coord_t)MojaPrvaHra.HP.Lopty[0].BallActualPositionY);
+          xSemaphoreGive(xGuiSemaphore);
+        }
       }
 
       
@@ -621,8 +653,27 @@ void MySerialDebug(void * param)
       Serial.print("Command:");
       Serial.println(MySerInput);
     }
-    vTaskDelay(200);
-  }
+    vTaskDelay(500);
+
+    for(int x=0;x<5;x++)
+    { //   static int cnt=0;
+      Serial.print("STACK [");
+      Serial.print(x);
+      Serial.print("] left:");
+      Serial.println(uxTaskGetStackHighWaterMark(taskHandles[x])); 
+    }
+    Serial.print("Total HEAP: ");
+    Serial.println(ESP.getHeapSize());
+    
+    Serial.print("Free HEAP: ");
+    Serial.println(xPortGetFreeHeapSize());
+
+    Serial.print("TOTAL PSRAM: ");
+    Serial.println(ESP.getPsramSize());
+    Serial.print("Free PSRAM: ");
+    Serial.println(ESP.getFreePsram());
+    
+ }
 }
 
 
@@ -650,15 +701,20 @@ void setup()
       
 
     //
-    xTaskCreate(MySerialDebug,"MySerialDebug",1024,NULL,1,NULL);
+    xTaskCreate(MySerialDebug,"MySerialDebug",1024,NULL,1,&taskHandles[0]);
+    Serial.print("Free HEAP after MySerialDebug:");
+    Serial.println(xPortGetFreeHeapSize());
     mutex=xSemaphoreCreateMutex();
-    Serial.printf("2. Mun of tasks:%d\n",uxTaskGetNumberOfTasks());
-    xTaskCreatePinnedToCore(lv_timer_han,"lv_timer_handler",15000,NULL,3,&LCDTask,0);
-    Serial.printf("3. Mun of tasks:%d\n",uxTaskGetNumberOfTasks());
-    xTaskCreatePinnedToCore(lv_exec,"lv_exec",4000,NULL,3,NULL,0);
-    Serial.printf("4. Mun of tasks:%d\n",uxTaskGetNumberOfTasks());
-    xTaskCreatePinnedToCore(MyBluetooth,"MyBluetooth",9000,NULL,1,&BleTask,1);
-    Serial.printf("5. Mun of tasks:%d\n",uxTaskGetNumberOfTasks());
+    
+    xTaskCreatePinnedToCore(lv_timer_han,"lv_timer_handler",17000,NULL,3,&taskHandles[1],0);
+    Serial.print("Free HEAP after lv_timer_handler:");
+    Serial.println(xPortGetFreeHeapSize());
+    xTaskCreatePinnedToCore(lv_exec,"lv_exec",4000,NULL,3,&taskHandles[2],0);
+    Serial.print("Free HEAP after lv_exec:");
+    Serial.println(xPortGetFreeHeapSize());
+    xTaskCreatePinnedToCore(MyBluetooth,"MyBluetooth",3000,NULL,1,&taskHandles[3],1);
+    Serial.print("Free HEAP after MyBluetooth:");
+    Serial.println(xPortGetFreeHeapSize());
 
     Serial.println( "Setup done" );
 

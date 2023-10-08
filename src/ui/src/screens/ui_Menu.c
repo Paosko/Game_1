@@ -22,7 +22,7 @@ lv_obj_set_height( ui_PanelBlrickGame, 85);
 lv_obj_set_x( ui_PanelBlrickGame, -100 );
 lv_obj_set_y( ui_PanelBlrickGame, 0 );
 lv_obj_set_align( ui_PanelBlrickGame, LV_ALIGN_CENTER );
-lv_obj_add_state( ui_PanelBlrickGame, LV_STATE_FOCUSED );     /// States
+//lv_obj_add_state( ui_PanelBlrickGame, LV_STATE_FOCUSED );     /// States
 lv_obj_clear_flag( ui_PanelBlrickGame, LV_OBJ_FLAG_SCROLLABLE );    /// Flags
 lv_obj_set_style_bg_img_src( ui_PanelBlrickGame, &ui_img_brickball_png, LV_PART_MAIN | LV_STATE_DEFAULT );
 lv_obj_set_style_bg_img_src( ui_PanelBlrickGame, &ui_img_brickball_png, LV_PART_MAIN | LV_STATE_FOCUSED );

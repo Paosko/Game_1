@@ -48,6 +48,7 @@ void ui_event_Wolf( lv_event_t * e);
 lv_obj_t *ui_Wolf;
 lv_obj_t *ui_GameArea2;
 lv_obj_t *ui_Image2;
+void ui_event_Ami( lv_event_t * e);
 lv_obj_t *ui_Ami;
 lv_obj_t *ui_Image6;
 lv_obj_t *ui_StatusPanelWolf;
@@ -123,6 +124,7 @@ void ui_event_PanelWolfGame( lv_event_t * e) {
     lv_event_code_t event_code = lv_event_get_code(e);lv_obj_t * target = lv_event_get_target(e);
 if ( event_code == LV_EVENT_CLICKED) {
      lv_group_remove_all_objs(MyControlGroup);
+     lv_group_add_obj(MyControlGroup,ui_Ami);
       _ui_screen_change( &ui_Wolf, LV_SCR_LOAD_ANIM_MOVE_RIGHT, 500, 0, &ui_Wolf_screen_init);
 }
 }
@@ -149,6 +151,24 @@ if ( event_code == LV_EVENT_CLICKED) {
       _ui_screen_change( &ui_Screen1, LV_SCR_LOAD_ANIM_FADE_ON, 500, 0, &ui_Screen1_screen_init);
 }
 }
+
+void ui_event_Ami( lv_event_t * e) {
+    lv_event_code_t event_code = lv_event_get_code(e);lv_obj_t * target = lv_event_get_target(e);
+    //log_e(event_code,"EventAmiRight_fc");
+    if ( event_code == LV_EVENT_KEY &&  lv_event_get_key(e) == LV_KEY_UP  ) {
+        EventAmiUP_fc( e );
+    }
+    if ( event_code == LV_EVENT_KEY &&  lv_event_get_key(e) == LV_KEY_DOWN  ) {
+        EventAmiDown_fc( e );
+    }
+    if ( event_code == LV_EVENT_KEY &&  lv_event_get_key(e) == LV_KEY_LEFT  ) {
+        EventAmiLeft_fc( e );
+    }
+    if ( event_code == LV_EVENT_KEY &&  lv_event_get_key(e) == LV_KEY_RIGHT  ) {
+        EventAmiRight_fc( e );
+    }
+}
+
 void ui_event_BrickScoreResetButton( lv_event_t * e) {
     lv_event_code_t event_code = lv_event_get_code(e);lv_obj_t * target = lv_event_get_target(e);
 if ( event_code == LV_EVENT_CLICKED) {

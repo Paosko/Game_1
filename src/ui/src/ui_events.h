@@ -10,6 +10,10 @@
 extern "C" {
 #endif
 
+void EventAmiUP_fc(lv_event_t * e);
+void EventAmiDown_fc(lv_event_t * e);
+void EventAmiLeft_fc(lv_event_t * e);
+void EventAmiRight_fc(lv_event_t * e);
 void ResetScoreBrickFunction(lv_event_t * e);
 void ResetScoreWolfFunction(lv_event_t * e);
 

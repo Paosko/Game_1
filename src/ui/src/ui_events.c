@@ -8,14 +8,34 @@
 
 void ResetScoreBrickFunction(lv_event_t * e)
 {
-	//Serial.println("ResetScoreBrickFunction triggered");
-	;
-	vTaskDelay(50);
+	log_e("ResetScoreWolfFunction","ResetScoreWolfFunction");
 }
 
 void ResetScoreWolfFunction(lv_event_t * e)
 {
-	//Serial.println("ResetScoreWolfFunction triggered");
-	;
-	vTaskDelay(50);
+	log_e("ResetScoreWolfFunction","ResetScoreWolfFunction");
+}
+
+void EventAmiUP_fc(lv_event_t * e)
+{
+	static int16_t x=0,y=0; 
+	lv_obj_set_pos(ui_Ami,x,y);
+	log_e("x:%d, y:%d",x,y);
+	x++;
+	y++;
+}
+
+void EventAmiDown_fc(lv_event_t * e)
+{
+	log_e("EventAmiDown_fc","EventAmiDown_fc");
+}
+
+void EventAmiLeft_fc(lv_event_t * e)
+{
+	log_e("EventAmiLeft_fc","EventAmiLeft_fc");
+}
+
+void EventAmiRight_fc(lv_event_t * e)
+{
+	log_e("EventAmiRight_fc","EventAmiRight_fc");
 }

@@ -535,6 +535,7 @@ void lv_timer_han(void *param)
     indev_drv2.type=LV_INDEV_TYPE_POINTER;
     indev_drv2.read_cb=myTOuch_read;
     TouchDriver=lv_indev_drv_register(&indev_drv2);
+    //lv_indev_delete(TouchDriver);
     
 
 
@@ -640,7 +641,21 @@ void lv_exec(void *param)
   }
 }
 
+void Kosticka (void *param)  // bude bezat viac krat, pre kazdu kosticku zvlast
+{
+  for(;;)
+  {
+    ;
+  }
+}
 
+void AmiGame (void *param)  // Bude spustat a zastavovat tasky kosticiek a ovladat Ami
+{
+  for(;;)
+  {
+    ;
+  }
+}
 
 
 
@@ -656,7 +671,7 @@ void MySerialDebug(void * param)
       Serial.print("Command:");
       Serial.println(MySerInput);
     }
-    vTaskDelay(500);
+    vTaskDelay(5000);
 
     for(int x=0;x<5;x++)
     { //   static int cnt=0;
@@ -720,7 +735,7 @@ void setup()
     Serial.println(xPortGetFreeHeapSize());
 
     Serial.println( "Setup done" );
-
+    log_e("setup","kontrola log_e");
 
 }
 

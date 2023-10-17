@@ -65,6 +65,7 @@ void ui_event_Wolf( lv_event_t * e);
 extern lv_obj_t *ui_Wolf;
 extern lv_obj_t *ui_GameArea2;
 extern lv_obj_t *ui_Image2;
+void ui_event_Ami( lv_event_t * e);
 extern lv_obj_t *ui_Ami;
 extern lv_obj_t *ui_Image6;
 extern lv_obj_t *ui_StatusPanelWolf;

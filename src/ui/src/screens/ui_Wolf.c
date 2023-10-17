@@ -57,6 +57,7 @@ lv_obj_set_x( ui_Image6, 19 );
 lv_obj_set_y( ui_Image6, 73 );
 lv_obj_add_flag( ui_Image6, LV_OBJ_FLAG_ADV_HITTEST );   /// Flags
 lv_obj_clear_flag( ui_Image6, LV_OBJ_FLAG_SCROLLABLE );    /// Flags
+lv_img_set_zoom(ui_Image6,150);
 
 ui_StatusPanelWolf = ui_StatusPanel_create(ui_Wolf);
 lv_obj_set_x( ui_StatusPanelWolf, -1 );
@@ -64,7 +65,7 @@ lv_obj_set_y( ui_StatusPanelWolf, -140 );
 
 
 
-
+lv_obj_add_event_cb(ui_Ami, ui_event_Ami, LV_EVENT_ALL, NULL);
 lv_obj_add_event_cb(ui_Wolf, ui_event_Wolf, LV_EVENT_ALL, NULL);
 
 }

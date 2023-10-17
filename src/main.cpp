@@ -397,6 +397,7 @@ void myTOuch_read(lv_indev_drv_t *indev_driver, lv_indev_data_t * data  )
     uint16_t touchX, touchY;
 
     bool touched = tft.getTouch( &touchX, &touchY, 600 );
+    //touchY=480-(touchY+88); //306,3133,88,3781,7
 
     if( !touched )
     {
@@ -406,15 +407,16 @@ void myTOuch_read(lv_indev_drv_t *indev_driver, lv_indev_data_t * data  )
     {
         data->state = LV_INDEV_STATE_PR;
 
-        
+        touchX=map(touchX,0,320,0,480);
+        touchY=map(touchY,0,480,0,320);
         data->point.x = touchX;
         data->point.y = touchY;
 
         Serial.print( "Data x " );
-        Serial.println( touchX );
+        Serial.println( data->point.x);
 
         Serial.print( "Data y " );
-        Serial.println( touchY );
+        Serial.println( data->point.y );
     }
 }
 
@@ -508,7 +510,8 @@ void lv_timer_han(void *param)
 
     tft.begin();          /* TFT init */
     tft.setRotation( 1 ); /* Landscape orientation, flipped */
-
+    uint16_t CallData[5]={300,3600,88,3781,7};
+    tft.setTouch(CallData); 
     lv_disp_draw_buf_init( &draw_buf, buf, NULL, screenWidth * screenHeight / 10 );
 
     /*Initialize the display*/

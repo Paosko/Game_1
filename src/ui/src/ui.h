@@ -30,6 +30,11 @@ extern "C" {
 
 
 extern lv_group_t * MyControlGroup;
+enum {
+  EnumBleVyhladavac,EnumBleVyhladany,EnumMenu,EnumBrickStart,EnumBrickGame,EnumAmiStart,EnumAmiHra,EnumSetting
+};
+extern int Roller;
+
 
 
 // SCREEN: ui_Screen1

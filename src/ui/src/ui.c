@@ -8,6 +8,13 @@
 
 ///////////////////// VARIABLES ////////////////////
 lv_group_t * MyControlGroup;
+// enum Obrazovka
+// {
+//   BleVyhladavac,BleVyhladany,Menu,Brick,Ami,Setting
+// };
+
+int Roller=EnumBleVyhladavac; // hovori ktora obrazovka je spustena
+
 
 // SCREEN: ui_Screen1
 void ui_Screen1_screen_init(void);
@@ -80,11 +87,6 @@ lv_obj_t *ui_Label12;
 lv_obj_t *ui_PanelDeviceInfo;
 lv_obj_t *ui_LabelDeviceInfo;
 lv_obj_t *ui____initial_actions0;
-//const lv_img_dsc_t *ui_imgset_ami[1] = {&ui_img_ami3_png};
-//const lv_img_dsc_t *ui_imgset_1601799055[1] = {&ui_img_391577990};
-//const lv_img_dsc_t *ui_imgset_158987798[1] = {&ui_img_1665173421};
-//const lv_img_dsc_t *ui_imgset_wolf[1] = { &ui_img_wolf_png};
-//const lv_img_dsc_t *ui_imgset_wolflayout[3] = {&ui_img_pokusy_wolflayout2_png, &ui_img_pokusy_wolflayout3_png, &ui_img_pokusy_wolflayout7_png};
 
 ///////////////////// TEST LVGL SETTINGS ////////////////////
 #if LV_COLOR_DEPTH != 16
@@ -99,58 +101,63 @@ lv_obj_t *ui____initial_actions0;
 ///////////////////// FUNCTIONS ////////////////////
 void ui_event_TextArea2( lv_event_t * e) {
     lv_event_code_t event_code = lv_event_get_code(e);lv_obj_t * target = lv_event_get_target(e);
-if ( event_code == LV_EVENT_CLICKED) {
-    lv_group_remove_all_objs(MyControlGroup);
-    lv_group_add_obj(MyControlGroup,ui_PanelWolfGame);
-    lv_group_add_obj(MyControlGroup,ui_PanelBlrickGame);
-    lv_group_add_obj(MyControlGroup,ui_SettingsButton);
-      _ui_screen_change( &ui_Menu, LV_SCR_LOAD_ANIM_NONE, 500, 0, &ui_Menu_screen_init);
-}
+    if ( event_code == LV_EVENT_CLICKED) {
+        lv_group_remove_all_objs(MyControlGroup);
+        lv_group_add_obj(MyControlGroup,ui_PanelWolfGame);
+        lv_group_add_obj(MyControlGroup,ui_PanelBlrickGame);
+        lv_group_add_obj(MyControlGroup,ui_SettingsButton);
+        _ui_screen_change( &ui_Menu, LV_SCR_LOAD_ANIM_NONE, 500, 0, &ui_Menu_screen_init);
+        Roller=EnumMenu;
+    }
 }
 void ui_event_Menu( lv_event_t * e) {
     lv_event_code_t event_code = lv_event_get_code(e);lv_obj_t * target = lv_event_get_target(e);
-if ( event_code == LV_EVENT_CLICKED) {
-     lv_group_remove_all_objs(MyControlGroup);
-      _ui_screen_change( &ui_Screen1, LV_SCR_LOAD_ANIM_FADE_ON, 500, 0, &ui_Screen1_screen_init);
-}
+    if ( event_code == LV_EVENT_CLICKED) {
+        lv_group_remove_all_objs(MyControlGroup);
+        _ui_screen_change( &ui_Screen1, LV_SCR_LOAD_ANIM_FADE_ON, 500, 0, &ui_Screen1_screen_init);
+        Roller=EnumBleVyhladavac;
+    }
 }
 void ui_event_PanelBlrickGame( lv_event_t * e) {
     lv_event_code_t event_code = lv_event_get_code(e);lv_obj_t * target = lv_event_get_target(e);
-if ( event_code == LV_EVENT_CLICKED) {
-     lv_group_remove_all_objs(MyControlGroup);
-      _ui_screen_change( &ui_BrickBall, LV_SCR_LOAD_ANIM_FADE_ON, 500, 0, &ui_BrickBall_screen_init);
-}
+    if ( event_code == LV_EVENT_CLICKED) {
+        lv_group_remove_all_objs(MyControlGroup);
+        _ui_screen_change( &ui_BrickBall, LV_SCR_LOAD_ANIM_FADE_ON, 500, 0, &ui_BrickBall_screen_init);
+        Roller=EnumBrickStart;
+    }
 }
 void ui_event_PanelWolfGame( lv_event_t * e) {
     lv_event_code_t event_code = lv_event_get_code(e);lv_obj_t * target = lv_event_get_target(e);
-if ( event_code == LV_EVENT_CLICKED) {
-     lv_group_remove_all_objs(MyControlGroup);
-     lv_group_add_obj(MyControlGroup,ui_Ami);
-      _ui_screen_change( &ui_Wolf, LV_SCR_LOAD_ANIM_MOVE_RIGHT, 500, 0, &ui_Wolf_screen_init);
-}
+    if ( event_code == LV_EVENT_CLICKED) {
+        lv_group_remove_all_objs(MyControlGroup);
+        lv_group_add_obj(MyControlGroup,ui_Ami);
+        _ui_screen_change( &ui_Wolf, LV_SCR_LOAD_ANIM_MOVE_RIGHT, 500, 0, &ui_Wolf_screen_init);
+        Roller=EnumAmiStart;
+    }
 }
 void ui_event_SettingsButton( lv_event_t * e) {
     lv_event_code_t event_code = lv_event_get_code(e);lv_obj_t * target = lv_event_get_target(e);
-if ( event_code == LV_EVENT_CLICKED) {
-    lv_group_remove_all_objs(MyControlGroup);
-    _ui_screen_delete(ui_Screen1);
-    _ui_screen_delete(ui_Menu);
-      _ui_screen_change( &ui_Settings, LV_SCR_LOAD_ANIM_NONE, 500, 0, &ui_Settings_screen_init);
-}
+    if ( event_code == LV_EVENT_CLICKED) {
+        lv_group_remove_all_objs(MyControlGroup);
+        _ui_screen_change( &ui_Settings, LV_SCR_LOAD_ANIM_NONE, 500, 0, &ui_Settings_screen_init);
+        Roller=EnumSetting;
+    }
 }
 void ui_event_BrickBall( lv_event_t * e) {
     lv_event_code_t event_code = lv_event_get_code(e);lv_obj_t * target = lv_event_get_target(e);
-if ( event_code == LV_EVENT_CLICKED) {
-     lv_group_remove_all_objs(MyControlGroup);
-      _ui_screen_change( &ui_Screen1, LV_SCR_LOAD_ANIM_FADE_ON, 500, 0, &ui_Screen1_screen_init);
-}
+    if ( event_code == LV_EVENT_CLICKED) {
+        lv_group_remove_all_objs(MyControlGroup);
+        _ui_screen_change( &ui_Screen1, LV_SCR_LOAD_ANIM_FADE_ON, 500, 0, &ui_Screen1_screen_init);
+        Roller=EnumBleVyhladavac;
+    }
 }
 void ui_event_Wolf( lv_event_t * e) {
     lv_event_code_t event_code = lv_event_get_code(e);lv_obj_t * target = lv_event_get_target(e);
-if ( event_code == LV_EVENT_CLICKED) {
-     lv_group_remove_all_objs(MyControlGroup);
-      _ui_screen_change( &ui_Screen1, LV_SCR_LOAD_ANIM_FADE_ON, 500, 0, &ui_Screen1_screen_init);
-}
+    if ( event_code == LV_EVENT_CLICKED) {
+        lv_group_remove_all_objs(MyControlGroup);
+        _ui_screen_change( &ui_Screen1, LV_SCR_LOAD_ANIM_FADE_ON, 500, 0, &ui_Screen1_screen_init);
+        Roller=EnumBleVyhladavac;
+    }
 }
 
 void ui_event_Ami( lv_event_t * e) {
@@ -172,37 +179,37 @@ void ui_event_Ami( lv_event_t * e) {
 
 void ui_event_BrickScoreResetButton( lv_event_t * e) {
     lv_event_code_t event_code = lv_event_get_code(e);lv_obj_t * target = lv_event_get_target(e);
-if ( event_code == LV_EVENT_CLICKED) {
-      ResetScoreBrickFunction( e );
-}
+    if ( event_code == LV_EVENT_CLICKED) {
+        ResetScoreBrickFunction( e );
+    }
 }
 void ui_event_BrickScoreResetButton1( lv_event_t * e) {
     lv_event_code_t event_code = lv_event_get_code(e);lv_obj_t * target = lv_event_get_target(e);
-if ( event_code == LV_EVENT_CLICKED) {
-      ResetScoreWolfFunction( e );
-}
+    if ( event_code == LV_EVENT_CLICKED) {
+        ResetScoreWolfFunction( e );
+    }
 }
 void ui_event_BackSettingsButton( lv_event_t * e) {
     lv_event_code_t event_code = lv_event_get_code(e);lv_obj_t * target = lv_event_get_target(e);
-if ( event_code == LV_EVENT_CLICKED) {
-      _ui_screen_change( &ui_Menu, LV_SCR_LOAD_ANIM_NONE, 500, 0, &ui_Menu_screen_init);
-}
+    if ( event_code == LV_EVENT_CLICKED) {
+        _ui_screen_change( &ui_Menu, LV_SCR_LOAD_ANIM_NONE, 500, 0, &ui_Menu_screen_init);
+    }
 }
 
 ///////////////////// SCREENS ////////////////////
 
 void ui_init( void )
-{LV_EVENT_GET_COMP_CHILD = lv_event_register_id();
-
-lv_disp_t *dispp = lv_disp_get_default();
-lv_theme_t *theme = lv_theme_default_init(dispp, lv_palette_main(LV_PALETTE_BLUE), lv_palette_main(LV_PALETTE_RED), false, LV_FONT_DEFAULT);
-lv_disp_set_theme(dispp, theme);
-ui_Screen1_screen_init();
-ui_Menu_screen_init();
-ui_BrickBall_screen_init();
-ui_Wolf_screen_init();
-ui_Settings_screen_init();
-ui____initial_actions0 = lv_obj_create(NULL);
-lv_disp_load_scr( ui_Screen1);
-//lv_disp_load_scr(ui_Settings);
+{
+    LV_EVENT_GET_COMP_CHILD = lv_event_register_id();
+    lv_disp_t *dispp = lv_disp_get_default();
+    lv_theme_t *theme = lv_theme_default_init(dispp, lv_palette_main(LV_PALETTE_BLUE), lv_palette_main(LV_PALETTE_RED), false, LV_FONT_DEFAULT);
+    lv_disp_set_theme(dispp, theme);
+    ui_Screen1_screen_init();
+    ui_Menu_screen_init();
+    ui_BrickBall_screen_init();
+    ui_Wolf_screen_init();
+    ui_Settings_screen_init();
+    ui____initial_actions0 = lv_obj_create(NULL);
+    lv_disp_load_scr( ui_Screen1);
+    //lv_disp_load_scr(ui_Settings);
 }

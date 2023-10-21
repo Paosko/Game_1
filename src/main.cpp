@@ -13,7 +13,8 @@ static SemaphoreHandle_t mutex;
 static SemaphoreHandle_t xGuiSemaphore;
 
 TaskHandle_t taskHandles[10];
-
+TaskHandle_t taskAmiGame;
+TaskHandle_t taskKosticky [10];
 
 //Debug part
 String MySerInput;    //Debug output nedorieseny
@@ -22,7 +23,7 @@ String MySerInput;    //Debug output nedorieseny
 static QueueHandle_t BleKeyboardQueue; // Queue pre Utopiu
 lv_indev_t * KeyDriver; // BLE Driver
 lv_indev_t * TouchDriver; // dotykovka
-int Roller=0; // hovori ktora obrazovka je spustena
+
 
 
 
@@ -422,6 +423,7 @@ void myTOuch_read(lv_indev_drv_t *indev_driver, lv_indev_data_t * data  )
 
 
 
+#if collaps // BrickGame
 class GameBall 
 {
   public:
@@ -496,6 +498,37 @@ class GameBall
     
   }
 
+#endif
+
+
+
+#if collaps // AmiGame
+
+void Kosticka (void *param)  // bude bezat viac krat, pre kazdu kosticku zvlast
+{
+  Serial.println("Bezi task kosticky");
+  TaskHandle_t localTask= xTaskGetCurrentTaskHandle();
+  // TaskStatus_t xTaskDetails;
+  // vTaskGetInfo(localTask,&xTaskDetails,NULL,eInvalid);
+  Serial.println((int)&localTask);
+  for(;;)
+  {
+    vTaskDelay(100);
+  }
+}
+
+void AmiGame (void *param)  // Bude spustat a zastavovat tasky kosticiek a ovladat Ami
+{
+  Serial.println("Spustil som Ami Task");
+  xTaskCreate(Kosticka,"Kosticka1",1000,NULL,1,&taskKosticky[0]);
+  xTaskCreate(Kosticka,"Kosticka2",1000,NULL,1,&taskKosticky[1]);
+  for(;;)
+  {
+    vTaskDelay(100);
+  }
+}
+
+#endif
 
 // Vykreslovanie displayu
 void lv_timer_han(void *param)
@@ -559,7 +592,6 @@ void lv_timer_han(void *param)
 
 }
 
-
 ///Uvodna Obrazovka, co sa napise a nastavi ked sa Utopia pripoji
 void initializeAfterConnect()
 {
@@ -585,13 +617,16 @@ void lv_exec(void *param)
   
   for(;;)
   {      
-  static bool wasConnected=false;  // priznak ci bol uz pripojeny alebo nie  
+    static bool wasConnected=false;  // priznak ci bol uz pripojeny bluetooth alebo nie  
     vTaskDelay(10);
+    
     if(!connected)
     {
-      
-      if(wasConnected) // ak bol pripojeny ale uz nie je -> vratit na prvy screen
+      if(wasConnected) // ak bol pripojeny ale uz nie je -> vratit na prvy screen 
       {
+        wasConnected=false;
+        Roller=EnumBleVyhladavac; // Vraciam na prvy screen
+        Serial.println("Bluetooth disconnected -> Vraciam na prvy screen");
         if (pdTRUE == xSemaphoreTake(xGuiSemaphore, portMAX_DELAY)) {
           lv_group_remove_all_objs(MyControlGroup);
           _ui_screen_change( &ui_Screen1, LV_SCR_LOAD_ANIM_FADE_ON, 500, 0, &ui_Screen1_screen_init);
@@ -601,61 +636,58 @@ void lv_exec(void *param)
           xSemaphoreGive(xGuiSemaphore);
         }
       }
-      
-      //vTaskDelay(10000);
-      //lv_textarea_set_text(ui_TextArea2,"moj iny text");
     }
-    if(connected==true && wasConnected==false) 
+    
+    
+    
+    
+    
+    
+    if(connected==true && wasConnected==false)  // Je pripojeny a nebol Pripojeny
       {
+        Serial.println("Je pripojeny a nebol Pripojeny");
         wasConnected=true;
-        initializeAfterConnect();
+        initializeAfterConnect(); //Je pripojeny 
+        Roller=EnumBleVyhladany;
       }
 
-    if(connected && Roller==0)
+    if(connected && Roller==EnumBleVyhladavac)
     {
-      Roller++;
-      initializeAfterConnect();
+      Serial.println("Moze nastat tento stav?");
+      Roller=EnumBleVyhladany;
+      initializeAfterConnect(); // Pripojeny prvy krat
 
       //Serial.println("Utopia connected");
     }
 
-    if(connected && Roller==1)
+    if(connected && Roller==EnumBleVyhladany)
     {
       ;
     }
 
-        if(connected && Roller==2)
+    if(connected && Roller==EnumBrickStart)
     {
-      if(wasConnected) // ak bol pripojeny ale uz nie je -> vratit na prvy screen
-      {
+
         if (pdTRUE == xSemaphoreTake(xGuiSemaphore, portMAX_DELAY)) {
           xTaskCreate(BallMove,"BallMove",5000,NULL,1,NULL);
           lv_obj_set_x(ui_Ball,(lv_coord_t)MojaPrvaHra.HP.Lopty[0].BallActualPositionX);
           lv_obj_set_y(ui_Ball,(lv_coord_t)MojaPrvaHra.HP.Lopty[0].BallActualPositionY);
           xSemaphoreGive(xGuiSemaphore);
-        }
-      }
+        }    
+        Roller=EnumBrickGame;  
+    }
 
-      
+    if(connected && Roller==EnumAmiStart)
+    {
+      Roller=EnumAmiHra;
+      xTaskCreate(AmiGame,"AmiGame",5000,NULL,1,&taskAmiGame);
+      if (pdTRUE == xSemaphoreTake(xGuiSemaphore, portMAX_DELAY)) {
+          xSemaphoreGive(xGuiSemaphore);
+      }      
     }
   }
 }
 
-void Kosticka (void *param)  // bude bezat viac krat, pre kazdu kosticku zvlast
-{
-  for(;;)
-  {
-    ;
-  }
-}
-
-void AmiGame (void *param)  // Bude spustat a zastavovat tasky kosticiek a ovladat Ami
-{
-  for(;;)
-  {
-    ;
-  }
-}
 
 
 

@@ -64,6 +64,7 @@ void ui_Wolf_screen_init(void);
 void ui_event_Wolf( lv_event_t * e);
 extern lv_obj_t *ui_Wolf;
 extern lv_obj_t *ui_GameArea2;
+extern lv_obj_t *ui_NahraneScore;
 extern lv_obj_t *ui_Image2;
 void ui_event_Ami( lv_event_t * e);
 extern lv_obj_t *ui_Ami;
@@ -96,20 +97,21 @@ extern lv_obj_t *ui_LabelDeviceInfo;
 extern lv_obj_t *ui____initial_actions0;
 
 LV_IMG_DECLARE( ui_img_brickball_png);   // assets\brickBall.png
-LV_IMG_DECLARE( ui_img_wolf_png);   // assets\wolf.png
 LV_IMG_DECLARE( ui_img_wolfbg_png);   // assets\wolfbg.png
 LV_IMG_DECLARE( ui_img_ami3_png);   // assets\Ami3.png
+LV_IMG_DECLARE( ui_img_ami3_mirrored_png);   // assets\Ami3_mirrored.png
 LV_IMG_DECLARE( ui_img_391577990);   // assets\bone-32.png
+LV_IMG_DECLARE( ui_img_amicatch_png);   // assets\amiCatch.png
 LV_IMG_DECLARE( ui_img_pot_ver_line_png);   // assets\pot_ver_line.png
 LV_IMG_DECLARE( ui_img_pot_ver_knob_png);   // assets\pot_ver_knob.png
-LV_IMG_DECLARE( ui_img_wolf2_png);   // assets\wolf2.png
-LV_IMG_DECLARE( ui_img_wolflayout2_png);   // assets\wolfLayout2.png
-LV_IMG_DECLARE( ui_img_wolflayout3_png);   // assets\wolfLayout3.png
-LV_IMG_DECLARE( ui_img_wolflayout7_png);   // assets\wolfLayout7.png
-LV_IMG_DECLARE( ui_img_ami1_png);   // assets\Ami1.png
-LV_IMG_DECLARE( ui_img_ami2_png);   // assets\Ami2.png
-LV_IMG_DECLARE( ui_img_210898296);   // assets\bone-157272_640.png
-LV_IMG_DECLARE( ui_img_1771879469);   // assets\bone-64.png
+//LV_IMG_DECLARE( ui_img_1665173421);   // assets\pokusy\bone-157272_640.png
+//LV_IMG_DECLARE( ui_img_847650150);   // assets\pokusy\bone-64.png
+//LV_IMG_DECLARE( ui_img_pokusy_wolf2_png);   // assets\pokusy\wolf2.png
+//LV_IMG_DECLARE( ui_img_pokusy_wolflayout2_png);   // assets\pokusy\wolfLayout2.png
+//LV_IMG_DECLARE( ui_img_pokusy_wolflayout3_png);   // assets\pokusy\wolfLayout3.png
+//LV_IMG_DECLARE( ui_img_pokusy_wolflayout7_png);   // assets\pokusy\wolfLayout7.png
+LV_IMG_DECLARE( ui_img_wolf_png);   // assets\wolf2.png
+//LV_IMG_DECLARE( ui_img_1771879469);   // assets\bone-64.png
 
 
 

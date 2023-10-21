@@ -5,6 +5,11 @@
 
 #include "ui.h"
 #include <Arduino.h>
+static int16_t x=0,y=0; 
+int16_t AmiPositionRightTopX=40,AmiPositionRightTopY=35; 
+int16_t AmiPositionRightBottomX=40,AmiPositionRightBottomY=95; 
+int16_t AmiPositionLeftTopX=-40,AmiPositionLeftTopY=35; 
+int16_t AmiPositionLeftBottomX=-40,AmiPositionLeftBottomY=95; 
 
 void ResetScoreBrickFunction(lv_event_t * e)
 {
@@ -18,24 +23,36 @@ void ResetScoreWolfFunction(lv_event_t * e)
 
 void EventAmiUP_fc(lv_event_t * e)
 {
-	static int16_t x=0,y=0; 
-	lv_obj_set_pos(ui_Ami,x,y);
+	lv_img_set_src(ui_Ami, &ui_img_ami3_mirrored_png);
+	lv_obj_set_pos(ui_Ami,AmiPositionLeftTopX,AmiPositionLeftTopY);
 	log_e("x:%d, y:%d",x,y);
-	x++;
-	y++;
-}
-
-void EventAmiDown_fc(lv_event_t * e)
-{
-	log_e("EventAmiDown_fc","EventAmiDown_fc");
+	
 }
 
 void EventAmiLeft_fc(lv_event_t * e)
 {
-	log_e("EventAmiLeft_fc","EventAmiLeft_fc");
+	lv_img_set_src(ui_Ami, &ui_img_ami3_mirrored_png);
+	lv_obj_set_pos(ui_Ami,AmiPositionLeftBottomX,AmiPositionLeftBottomY);
+	log_e("x:%d, y:%d",x,y);
+	
 }
 
 void EventAmiRight_fc(lv_event_t * e)
 {
-	log_e("EventAmiRight_fc","EventAmiRight_fc");
+	lv_img_set_src(ui_Ami, &ui_img_ami3_png);
+	lv_obj_set_pos(ui_Ami,AmiPositionRightTopX,AmiPositionRightTopY);
+	log_e("x:%d, y:%d",x,y);
+	
 }
+
+void EventAmiDown_fc(lv_event_t * e)
+{
+	lv_img_set_src(ui_Ami, &ui_img_ami3_png);
+	lv_obj_set_pos(ui_Ami,AmiPositionRightBottomX,AmiPositionRightBottomY);
+	log_e("x:%d, y:%d",x,y);
+	
+}
+
+
+
+

@@ -47,6 +47,7 @@ void ui_Wolf_screen_init(void);
 void ui_event_Wolf( lv_event_t * e);
 lv_obj_t *ui_Wolf;
 lv_obj_t *ui_GameArea2;
+lv_obj_t *ui_NahraneScore;
 lv_obj_t *ui_Image2;
 void ui_event_Ami( lv_event_t * e);
 lv_obj_t *ui_Ami;
@@ -79,11 +80,11 @@ lv_obj_t *ui_Label12;
 lv_obj_t *ui_PanelDeviceInfo;
 lv_obj_t *ui_LabelDeviceInfo;
 lv_obj_t *ui____initial_actions0;
-const lv_img_dsc_t *ui_imgset_wolf[1] = {&ui_img_wolf2_png};
-const lv_img_dsc_t *ui_imgset_wolflayout[3] = {&ui_img_wolflayout2_png, &ui_img_wolflayout3_png, &ui_img_wolflayout7_png};
-const lv_img_dsc_t *ui_imgset_ami[3] = {&ui_img_ami1_png, &ui_img_ami2_png, &ui_img_ami3_png};
-const lv_img_dsc_t *ui_imgset_158987798[1] = {&ui_img_210898296};
-const lv_img_dsc_t *ui_imgset_1601799055[2] = {&ui_img_1771879469, &ui_img_391577990};
+//const lv_img_dsc_t *ui_imgset_ami[1] = {&ui_img_ami3_png};
+//const lv_img_dsc_t *ui_imgset_1601799055[1] = {&ui_img_391577990};
+//const lv_img_dsc_t *ui_imgset_158987798[1] = {&ui_img_1665173421};
+//const lv_img_dsc_t *ui_imgset_wolf[1] = { &ui_img_wolf_png};
+//const lv_img_dsc_t *ui_imgset_wolflayout[3] = {&ui_img_pokusy_wolflayout2_png, &ui_img_pokusy_wolflayout3_png, &ui_img_pokusy_wolflayout7_png};
 
 ///////////////////// TEST LVGL SETTINGS ////////////////////
 #if LV_COLOR_DEPTH != 16

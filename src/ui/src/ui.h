@@ -36,6 +36,11 @@ enum {
 extern int Roller;
 
 
+enum {
+  EnumAmiTopLeft,EnumAmiBottomLeft,EnumAmiTopRight,EnumAmiBottomRight
+};
+extern char AmiPosition;
+
 
 // SCREEN: ui_Screen1
 void ui_Screen1_screen_init(void);

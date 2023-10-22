@@ -14,6 +14,7 @@ lv_group_t * MyControlGroup;
 // };
 
 int Roller=EnumBleVyhladavac; // hovori ktora obrazovka je spustena
+char AmiPosition; // Pozícia Ami
 
 
 // SCREEN: ui_Screen1
@@ -58,7 +59,7 @@ lv_obj_t *ui_NahraneScore;
 lv_obj_t *ui_Image2;
 void ui_event_Ami( lv_event_t * e);
 lv_obj_t *ui_Ami;
-lv_obj_t *ui_Image6;
+//lv_obj_t *ui_Image6;
 lv_obj_t *ui_StatusPanelWolf;
 
 

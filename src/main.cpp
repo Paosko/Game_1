@@ -6,7 +6,7 @@
 #include <soc/rtc_wdt.h>
 #include <math.h>
 
-#define collaps 1 // len aby som vedel collapsnut nejaku cast kodu :D 
+#define collaps 1 // len aby som vedel collapsnut nejaku cast kodu :D
 
 //FreeRtos Config
 static SemaphoreHandle_t mutex;
@@ -65,10 +65,10 @@ lv_indev_t * TouchDriver; // dotykovka
       {
         Serial.print("MySerInput length: ");
         Serial.println(MySerInput.length());
-        {if(MySerInput.length()-2>CompCommand.length()) 
+        {if(MySerInput.length()-2>CompCommand.length())
           {
             Serial.println("Je wite");
-            return CompCommand.length(); //Return Write 
+            return CompCommand.length(); //Return Write
           }
           else
           {
@@ -112,7 +112,7 @@ lv_indev_t * TouchDriver; // dotykovka
     {return LV_KEY_PREV;} //B
     if(Tlacidko==16)
     {return LV_KEY_NEXT;} //D
-    if(Tlacidko==64)  
+    if(Tlacidko==64)
     {return LV_KEY_HOME;} //Y spodne
     if(Tlacidko==128)
     {return LV_KEY_DEL;} //X vrchne
@@ -121,7 +121,7 @@ lv_indev_t * TouchDriver; // dotykovka
   }
 
   //When the BLE Server sends a new Joystick reading with the notify property
-  static void JoystickNotifyCallback(BLERemoteCharacteristic* pBLERemoteCharacteristic, uint8_t* pData, size_t length, bool isNotify) 
+  static void JoystickNotifyCallback(BLERemoteCharacteristic* pBLERemoteCharacteristic, uint8_t* pData, size_t length, bool isNotify)
   {
 
     static BleKey Klavesa;
@@ -143,18 +143,18 @@ lv_indev_t * TouchDriver; // dotykovka
         if(xQueueSend(BleKeyboardQueue,(void*)&Klavesa,10)!=pdTRUE)
           {Serial.println("Queue sending problem ");}
       }
-      
+
       Joystick=pData[1]; // Uloz novu hodnotu
-      
+
       if(Joystick!=80)  //Ak sa nova hodnota nerovna nestlacene tak ju nastav
-      { 
+      {
         Klavesa.Key=JoystickMap(Joystick);
         Klavesa.State=true;
         if(xQueueSend(BleKeyboardQueue,(void*)&Klavesa,10)!=pdTRUE)
           {Serial.println("Queue sending problem ");}
       }
     }
-    
+
     if(pData[0]!=Tlacidlo) //Ak je zmena na klavese
     {
         for (uint8_t x=0x80;x!=0;x>>=1) // x-> 128,64,32,16,8,4,2,1
@@ -165,7 +165,7 @@ lv_indev_t * TouchDriver; // dotykovka
           Serial.print(Tlacidlo&x);
           Serial.print(" pData[0]&x:");
           Serial.print(pData[0]&x);*/
-          
+
           if((Tlacidlo&x) != (pData[0]&x)) //pokial sa stara hodnota bitu nerovna novej
           {
             Klavesa.Key=TlacidkoMap(x);
@@ -181,12 +181,12 @@ lv_indev_t * TouchDriver; // dotykovka
           }
         }
         Tlacidlo=pData[0];
-    } 
-    
+    }
+
   }
 
   //When the BLE Server sends a new Battery reading with the notify property
-  static void BatteryNotifyCallback(BLERemoteCharacteristic* pBLERemoteCharacteristic, 
+  static void BatteryNotifyCallback(BLERemoteCharacteristic* pBLERemoteCharacteristic,
                                       uint8_t* pData, size_t length, bool isNotify) {
     //store Battery value
     //BatteryChar = (char*)pData;
@@ -197,11 +197,11 @@ lv_indev_t * TouchDriver; // dotykovka
 
   //Connect to the BLE Server that has the name, Service, and Characteristics
   bool connectToServer(BLEAddress pAddress) {
-  
+
     // Connect to the remove BLE Server.
     pClient->connect(pAddress);
     Serial.println(" - Connected to server");
-    
+
     std::map<std::string, BLERemoteService*> *pRemoteServices = pClient->getServices();
     Serial.print("Nb of services: "); Serial.println(pRemoteServices->size());
 
@@ -212,7 +212,7 @@ lv_indev_t * TouchDriver; // dotykovka
 
     //  std::cout << it->first << " " << it->second.first << " " << it->second.second << "\n";
   }
-  
+
     // Obtain a reference to the service we are after in the remote BLE server.
     BLERemoteService* pRemoteService = pClient->getService(bmeServiceUUID);
     if (pRemoteService == nullptr) {
@@ -225,7 +225,7 @@ lv_indev_t * TouchDriver; // dotykovka
 
     for( itrbh = pRemoteCharacteristic->begin(); itrbh != pRemoteCharacteristic->end(); ++itrbh)
     {
-      
+
       //erial.printf("pRemoteCharacteristic: first: %d second.getUUID:%s, second.tostring:%s\n",itrbh->first,itrbh->second->getUUID().toString().c_str(),itrbh->second->toString().c_str());
       if (JoystickCharacteristicUUID.equals (itrbh->second->getUUID()))
       {
@@ -236,8 +236,8 @@ lv_indev_t * TouchDriver; // dotykovka
         }
       }
     }
-    
-  
+
+
     // Obtain a reference to the characteristics in the service of the remote BLE server.
     //JoystickCharacteristic = pRemoteService->getCharacteristic(JoystickCharacteristicUUID);
     //BatteryCharacteristic = pRemoteService->getCharacteristic(BatteryCharacteristicUUID);
@@ -255,7 +255,7 @@ lv_indev_t * TouchDriver; // dotykovka
   *\/
     //Assign callback functions for the Characteristics
     Serial.printf("JoystickCharacteristic can notify:%d\n",JoystickCharacteristic->canNotify());
-    
+
     JoystickCharacteristic->registerForNotify(JoystickNotifyCallback);
     Serial.printf("Joystick ReadRawData:%02X\n",JoystickCharacteristic->readRawData());
     Serial.printf("Joystick Handle:%d\n",JoystickCharacteristic->getHandle());
@@ -281,10 +281,10 @@ lv_indev_t * TouchDriver; // dotykovka
 
 
   void MyBluetooth(void * param)
-  {   
+  {
 
     BLEDevice::init("");
-  
+
     // Retrieve a Scanner and set the callback we want to use to be informed when we
     // have detected a new device.  Specify that we want active scanning and start the
     // scan to run for 30 seconds.
@@ -301,7 +301,7 @@ lv_indev_t * TouchDriver; // dotykovka
         connected=false;
       }
       vTaskDelay(500);
-      if (doConnect == true) 
+      if (doConnect == true)
       {
         //Serial.printf("Start connecting to %s\n",pServerAddress->toString());
         if (connectToServer(*pServerAddress)) {
@@ -347,7 +347,7 @@ void my_print(const char * buf)
     Serial.flush();
 }
 #endif
- 
+
 /* Display flushing */
 void my_disp_flush( lv_disp_drv_t *disp, const lv_area_t *area, lv_color_t *color_p )
 {
@@ -383,7 +383,7 @@ void my_Keyboard_read( lv_indev_drv_t * indev_driver, lv_indev_data_t * data )
       Serial.print(Klavesa.Key);
       Serial.print("    Hodnota:");
       Serial.println(Klavesa.State);
-      
+
   }
 
   //if(key_pressed()) data->state = LV_INDEV_STATE_PR;
@@ -424,7 +424,7 @@ void myTOuch_read(lv_indev_drv_t *indev_driver, lv_indev_data_t * data  )
 
 
 #if collaps // BrickGame
-class GameBall 
+class GameBall
 {
   public:
   struct Ball
@@ -444,10 +444,10 @@ class GameBall
     uint8_t numOfBalls;
     Ball Lopty[5];
   };
-  
-  
+
+
   HraciePole HP=HraciePole();
-  
+
   GameBall()
   {
     Ball lopta=Ball();
@@ -470,7 +470,7 @@ class GameBall
   GameBall MojaPrvaHra;
   void BallMove(void *p)
   {
-    
+
     for(;;)
     {
       uint8_t comp=MyCommandCompare("b.s");
@@ -495,7 +495,7 @@ class GameBall
       Serial.print((lv_coord_t)MojaPrvaHra.HP.Lopty[0].BallActualPositionY);*/
       vTaskDelay(30);
     }
-    
+
   }
 
 #endif
@@ -503,16 +503,135 @@ class GameBall
 
 
 #if collaps // AmiGame
+struct StructKosticka
+{
+  float poziciaX;
+  float poziciaY;
+  int speed;
+  float rotace;
+};
+
+
+
+void KostickaMove(int DeltaTime, StructKosticka * iKosticka)
+{
+  //log_e("DeltaTIme:%d",DeltaTime);
+  float Koef=(float)((float)DeltaTime/1000)*((float)iKosticka->speed/(float)1000);
+  //log_e("init X:%d Y:%d",(*x),(*y));
+  //log_e("koef:%f",Koef);
+  if(iKosticka->poziciaX<200)
+  {
+    iKosticka->poziciaX=iKosticka->poziciaX+Koef;
+    iKosticka->rotace=(iKosticka->rotace)+(Koef*100);
+    //log_e("Normalna Rotace:%f",(iKosticka->rotace));
+  }
+  else
+  {
+    iKosticka->poziciaX=iKosticka->poziciaX-Koef;
+    iKosticka->rotace=(iKosticka->rotace)-(Koef*100);
+    //log_e("Normalna Rotace:%f",(iKosticka->rotace));
+  }
+  iKosticka->poziciaY=iKosticka->poziciaY+Koef*0.5;
+  
+  //log_e("out X:%f Y:%f",(*x),(*y));
+
+}
 
 void Kosticka (void *param)  // bude bezat viac krat, pre kazdu kosticku zvlast
 {
-  Serial.println("Bezi task kosticky");
-  TaskHandle_t localTask= xTaskGetCurrentTaskHandle();
-  // TaskStatus_t xTaskDetails;
-  // vTaskGetInfo(localTask,&xTaskDetails,NULL,eInvalid);
-  Serial.println((int)&localTask);
+  #if collaps // Kosticka Init
+    // Ulozenie vstupnych hodnôt. Vstupne hodnoty byvaju prepisovane (pointre) takze je ichokamzite potreba ulozit 
+    StructKosticka * VstupKosticka=(StructKosticka *)param;
+    StructKosticka internalKosticka;
+    internalKosticka.poziciaX=VstupKosticka->poziciaX;
+    internalKosticka.poziciaY=VstupKosticka->poziciaY;
+    internalKosticka.speed=VstupKosticka->speed;
+    internalKosticka.rotace=VstupKosticka->rotace;
+    // Na vypocet pozicii kosticky -> jednotlive rozdiely znamenaju nejaka pozicia polohy kosticky. asi 4 alebo 5
+    float initPoziciaX=internalKosticka.poziciaX;
+    float initPoziciaY=internalKosticka.poziciaY;
+    float deltaRozsahY=0; // maximalna odchylka od inicializacnej pozicie -> po prekroceni odpocita zivot
+    int pozice=0;
+    //Na meranie casu pre vypocet polohy podla casu
+    static long MoveStartTime=xTaskGetTickCount();
+
+
+    Serial.println("Bezi task kosticky");
+    TaskHandle_t localTask= xTaskGetCurrentTaskHandle();
+    // TaskStatus_t xTaskDetails;
+    // vTaskGetInfo(localTask,&xTaskDetails,NULL,eInvalid);
+    Serial.println((int)&localTask);
+
+    //Vytvorenie objektu kosticky
+    lv_obj_t *uiKosticka;
+    if (pdTRUE == xSemaphoreTake(xGuiSemaphore, portMAX_DELAY)) {
+      uiKosticka = lv_img_create(ui_GameArea2);
+      lv_img_set_src(uiKosticka, &ui_img_391577990); //kosticka
+      lv_obj_set_width( uiKosticka, LV_SIZE_CONTENT);  /// 1
+      lv_obj_set_height( uiKosticka, LV_SIZE_CONTENT);   /// 1
+      lv_obj_set_x( uiKosticka, (int16_t)internalKosticka.poziciaX );
+      lv_obj_set_y( uiKosticka, (int16_t)internalKosticka.poziciaY );
+      lv_img_set_angle(uiKosticka,(int16_t)internalKosticka.rotace);
+      lv_obj_add_flag( uiKosticka, LV_OBJ_FLAG_ADV_HITTEST );   /// Flags
+      lv_obj_clear_flag( uiKosticka, LV_OBJ_FLAG_SCROLLABLE );    /// Flags
+      lv_img_set_zoom(uiKosticka,150);
+      xSemaphoreGive(xGuiSemaphore);
+    #endif
+  }
   for(;;)
   {
+    int deltaTime=xTaskGetTickCount()-MoveStartTime;
+    MoveStartTime=xTaskGetTickCount();
+    KostickaMove(deltaTime,&internalKosticka);
+
+    //Ak je kosticka mimo rozsah -> Y pozicia
+    if(internalKosticka.poziciaY-initPoziciaY>deltaRozsahY)
+    {
+      log_e("Kosticka mimo rozsah, task suspended");
+      vTaskSuspend(NULL);
+    }
+
+    int deltaX=(int)(internalKosticka.poziciaX-initPoziciaX);
+    if(deltaX>=0 && deltaX<33)
+    {
+      if(pozice!=1)
+      {
+        //Kosticka vstupila do pozice 1
+        pozice=1;
+      }
+    }
+    if(deltaX>=33 && deltaX<66)
+    {
+      if(pozice!=2)
+      {
+        //Kosticka vstupila do pozice 2
+        pozice=2;
+      }
+    }
+    if(deltaX>=66 && deltaX<99)
+    {
+      if(pozice!=3)
+      {
+        //Kosticka vstupila do pozice 3
+        pozice=3;
+      }
+    }
+    if(deltaX>=100)
+    {
+      if(pozice!=4)
+      {
+        //Kosticka vstupila do pozice 4
+        pozice=4;
+      }
+    }
+
+
+    if (pdTRUE == xSemaphoreTake(xGuiSemaphore, portMAX_DELAY)) {
+      lv_obj_set_x( uiKosticka, (int16_t)internalKosticka.poziciaX);
+      lv_obj_set_y( uiKosticka, (int16_t)internalKosticka.poziciaY );
+      lv_img_set_angle(uiKosticka,(int16_t)internalKosticka.rotace);
+      xSemaphoreGive(xGuiSemaphore);
+    }
     vTaskDelay(100);
   }
 }
@@ -520,8 +639,17 @@ void Kosticka (void *param)  // bude bezat viac krat, pre kazdu kosticku zvlast
 void AmiGame (void *param)  // Bude spustat a zastavovat tasky kosticiek a ovladat Ami
 {
   Serial.println("Spustil som Ami Task");
-  xTaskCreate(Kosticka,"Kosticka1",1000,NULL,1,&taskKosticky[0]);
-  xTaskCreate(Kosticka,"Kosticka2",1000,NULL,1,&taskKosticky[1]);
+  StructKosticka AmiKosticka = {19,73,5000,0};
+  xTaskCreate(Kosticka,"Kosticka1",4000,&AmiKosticka,1,&taskKosticky[0]);
+  vTaskDelay(500);
+  AmiKosticka = {19,150,100,0};
+ // xTaskCreate(Kosticka,"Kosticka2",4000,&AmiKosticka,1,&taskKosticky[1]);
+  vTaskDelay(500);
+  AmiKosticka = {400,150,100,0};
+  //xTaskCreate(Kosticka,"Kosticka3",4000,&AmiKosticka,1,&taskKosticky[1]);
+  vTaskDelay(500);
+  AmiKosticka = {400,73,100,0};
+  //xTaskCreate(Kosticka,"Kosticka4",4000,&AmiKosticka,1,&taskKosticky[1]);
   for(;;)
   {
     vTaskDelay(100);
@@ -534,7 +662,7 @@ void AmiGame (void *param)  // Bude spustat a zastavovat tasky kosticiek a ovlad
 void lv_timer_han(void *param)
 {
   if (pdTRUE == xSemaphoreTake(xGuiSemaphore, portMAX_DELAY)) {
-      
+
       lv_init();
 
     #if LV_USE_LOG != 0
@@ -544,11 +672,11 @@ void lv_timer_han(void *param)
     tft.begin();          /* TFT init */
     tft.setRotation( 1 ); /* Landscape orientation, flipped */
     uint16_t CallData[5]={300,3600,88,3781,7};
-    tft.setTouch(CallData); 
+    tft.setTouch(CallData);
     lv_disp_draw_buf_init( &draw_buf, buf, NULL, screenWidth * screenHeight / 10 );
 
     /*Initialize the display*/
-    
+
     lv_disp_drv_init( &disp_drv );
     /*Change the following line to your display resolution*/
     disp_drv.hor_res = screenWidth;
@@ -558,7 +686,7 @@ void lv_timer_han(void *param)
     lv_disp_drv_register( &disp_drv );
 
     /*Initialize the (dummy) input device driver*/
-    
+
     lv_indev_drv_init( &indev_drv );
     lv_indev_drv_init( &indev_drv2 );
     indev_drv.type = LV_INDEV_TYPE_KEYPAD;
@@ -569,7 +697,7 @@ void lv_timer_han(void *param)
     indev_drv2.read_cb=myTOuch_read;
     TouchDriver=lv_indev_drv_register(&indev_drv2);
     //lv_indev_delete(TouchDriver);
-    
+
 
 
 
@@ -585,7 +713,7 @@ void lv_timer_han(void *param)
     xSemaphoreGive(xGuiSemaphore);
   }
           // lv_timer_handler_run_in_period(5);
-          
+
   vTaskDelay(5);
 
   }
@@ -611,18 +739,18 @@ void initializeAfterConnect()
 void lv_exec(void *param)
 {
   if (pdTRUE == xSemaphoreTake(xGuiSemaphore, portMAX_DELAY)) {
-    MyControlGroup=lv_group_create(); 
+    MyControlGroup=lv_group_create();
     xSemaphoreGive(xGuiSemaphore);
   }
-  
+
   for(;;)
-  {      
-    static bool wasConnected=false;  // priznak ci bol uz pripojeny bluetooth alebo nie  
+  {
+    static bool wasConnected=false;  // priznak ci bol uz pripojeny bluetooth alebo nie
     vTaskDelay(10);
-    
+
     if(!connected)
     {
-      if(wasConnected) // ak bol pripojeny ale uz nie je -> vratit na prvy screen 
+      if(wasConnected) // ak bol pripojeny ale uz nie je -> vratit na prvy screen
       {
         wasConnected=false;
         Roller=EnumBleVyhladavac; // Vraciam na prvy screen
@@ -637,17 +765,17 @@ void lv_exec(void *param)
         }
       }
     }
-    
-    
-    
-    
-    
-    
+
+
+
+
+
+
     if(connected==true && wasConnected==false)  // Je pripojeny a nebol Pripojeny
       {
         Serial.println("Je pripojeny a nebol Pripojeny");
         wasConnected=true;
-        initializeAfterConnect(); //Je pripojeny 
+        initializeAfterConnect(); //Je pripojeny
         Roller=EnumBleVyhladany;
       }
 
@@ -673,8 +801,8 @@ void lv_exec(void *param)
           lv_obj_set_x(ui_Ball,(lv_coord_t)MojaPrvaHra.HP.Lopty[0].BallActualPositionX);
           lv_obj_set_y(ui_Ball,(lv_coord_t)MojaPrvaHra.HP.Lopty[0].BallActualPositionY);
           xSemaphoreGive(xGuiSemaphore);
-        }    
-        Roller=EnumBrickGame;  
+        }
+        Roller=EnumBrickGame;
     }
 
     if(connected && Roller==EnumAmiStart)
@@ -683,7 +811,7 @@ void lv_exec(void *param)
       xTaskCreate(AmiGame,"AmiGame",5000,NULL,1,&taskAmiGame);
       if (pdTRUE == xSemaphoreTake(xGuiSemaphore, portMAX_DELAY)) {
           xSemaphoreGive(xGuiSemaphore);
-      }      
+      }
     }
   }
 }
@@ -695,10 +823,10 @@ void MySerialDebug(void * param)
 {
   for(;;)
   {
-    
+
     if(Serial.available())
     {
-      
+
       MySerInput=Serial.readString();
       Serial.print("Command:");
       Serial.println(MySerInput);
@@ -710,11 +838,20 @@ void MySerialDebug(void * param)
       Serial.print("STACK [");
       Serial.print(x);
       Serial.print("] left:");
-      Serial.println(uxTaskGetStackHighWaterMark(taskHandles[x])); 
+      Serial.println(uxTaskGetStackHighWaterMark(taskHandles[x]));
     }
+
+    for(int x=0;x<2;x++)
+    { //   static int cnt=0;
+      Serial.print("STACK Kosticky [");
+      Serial.print(x);
+      Serial.print("] left:");
+      Serial.println(uxTaskGetStackHighWaterMark(taskKosticky[x]));
+    }
+
     Serial.print("Total HEAP: ");
     Serial.println(ESP.getHeapSize());
-    
+
     Serial.print("Free HEAP: ");
     Serial.println(xPortGetFreeHeapSize());
 
@@ -722,7 +859,7 @@ void MySerialDebug(void * param)
     Serial.println(ESP.getPsramSize());
     Serial.print("Free PSRAM: ");
     Serial.println(ESP.getFreePsram());
-    
+
  }
 }
 
@@ -748,14 +885,14 @@ void setup()
     Serial.println( LVGL_Arduino );
     Serial.println( "I am LVGL_Arduino" );
 
-      
+
 
     //
     xTaskCreate(MySerialDebug,"MySerialDebug",1024,NULL,1,&taskHandles[0]);
     Serial.print("Free HEAP after MySerialDebug:");
     Serial.println(xPortGetFreeHeapSize());
     mutex=xSemaphoreCreateMutex();
-    
+
     xTaskCreatePinnedToCore(lv_timer_han,"lv_timer_handler",17000,NULL,3,&taskHandles[1],0);
     Serial.print("Free HEAP after lv_timer_handler:");
     Serial.println(xPortGetFreeHeapSize());

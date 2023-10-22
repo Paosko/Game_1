@@ -25,6 +25,7 @@ void EventAmiUP_fc(lv_event_t * e)
 {
 	lv_img_set_src(ui_Ami, &ui_img_ami3_mirrored_png);
 	lv_obj_set_pos(ui_Ami,AmiPositionLeftTopX,AmiPositionLeftTopY);
+	AmiPosition=EnumAmiTopLeft;
 	log_e("x:%d, y:%d",x,y);
 	
 }
@@ -33,6 +34,7 @@ void EventAmiLeft_fc(lv_event_t * e)
 {
 	lv_img_set_src(ui_Ami, &ui_img_ami3_mirrored_png);
 	lv_obj_set_pos(ui_Ami,AmiPositionLeftBottomX,AmiPositionLeftBottomY);
+	AmiPosition=EnumAmiBottomLeft;
 	log_e("x:%d, y:%d",x,y);
 	
 }
@@ -41,6 +43,7 @@ void EventAmiRight_fc(lv_event_t * e)
 {
 	lv_img_set_src(ui_Ami, &ui_img_ami3_png);
 	lv_obj_set_pos(ui_Ami,AmiPositionRightTopX,AmiPositionRightTopY);
+	AmiPosition=EnumAmiTopRight;
 	log_e("x:%d, y:%d",x,y);
 	
 }
@@ -49,6 +52,7 @@ void EventAmiDown_fc(lv_event_t * e)
 {
 	lv_img_set_src(ui_Ami, &ui_img_ami3_png);
 	lv_obj_set_pos(ui_Ami,AmiPositionRightBottomX,AmiPositionRightBottomY);
+	AmiPosition=EnumAmiBottomRight;
 	log_e("x:%d, y:%d",x,y);
 	
 }

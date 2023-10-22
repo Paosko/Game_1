@@ -503,10 +503,17 @@ class GameBall
 
 
 #if collaps // AmiGame
+struct StructPoloha
+{
+  float x;
+  float y;
+};
+
+
 struct StructKosticka
 {
-  float poziciaX;
-  float poziciaY;
+  //char poloha;
+  StructPoloha pozicia;
   int speed;
   float rotace;
 };
@@ -515,25 +522,25 @@ struct StructKosticka
 
 void KostickaMove(int DeltaTime, StructKosticka * iKosticka)
 {
-  //log_e("DeltaTIme:%d",DeltaTime);
+  log_e("DeltaTIme:%d",DeltaTime);
   float Koef=(float)((float)DeltaTime/1000)*((float)iKosticka->speed/(float)1000);
   //log_e("init X:%d Y:%d",(*x),(*y));
-  //log_e("koef:%f",Koef);
-  if(iKosticka->poziciaX<200)
+  log_e("koef:%f",Koef);
+  if(iKosticka->pozicia.x<200)
   {
-    iKosticka->poziciaX=iKosticka->poziciaX+Koef;
+    iKosticka->pozicia.x=iKosticka->pozicia.x+Koef;
     iKosticka->rotace=(iKosticka->rotace)+(Koef*100);
     //log_e("Normalna Rotace:%f",(iKosticka->rotace));
   }
   else
   {
-    iKosticka->poziciaX=iKosticka->poziciaX-Koef;
+    iKosticka->pozicia.x=iKosticka->pozicia.x-Koef;
     iKosticka->rotace=(iKosticka->rotace)-(Koef*100);
     //log_e("Normalna Rotace:%f",(iKosticka->rotace));
   }
-  iKosticka->poziciaY=iKosticka->poziciaY+Koef*0.5;
+  iKosticka->pozicia.y=iKosticka->pozicia.y+Koef*0.5;
   
-  //log_e("out X:%f Y:%f",(*x),(*y));
+  log_e("out X:%f Y:%f",(iKosticka->pozicia.x),(iKosticka->pozicia.y));
 
 }
 
@@ -543,14 +550,18 @@ void Kosticka (void *param)  // bude bezat viac krat, pre kazdu kosticku zvlast
     // Ulozenie vstupnych hodnôt. Vstupne hodnoty byvaju prepisovane (pointre) takze je ichokamzite potreba ulozit 
     StructKosticka * VstupKosticka=(StructKosticka *)param;
     StructKosticka internalKosticka;
-    internalKosticka.poziciaX=VstupKosticka->poziciaX;
-    internalKosticka.poziciaY=VstupKosticka->poziciaY;
+    internalKosticka.pozicia.x=VstupKosticka->pozicia.x;
+    internalKosticka.pozicia.y=VstupKosticka->pozicia.y;
+   
+    //log_e("internalPoloha X:%f, Y:%f",internalKosticka.pozicia.x,internalKosticka.pozicia.y);
+    //internalKosticka.poloha=VstupKosticka->poloha;
+   
     internalKosticka.speed=VstupKosticka->speed;
     internalKosticka.rotace=VstupKosticka->rotace;
     // Na vypocet pozicii kosticky -> jednotlive rozdiely znamenaju nejaka pozicia polohy kosticky. asi 4 alebo 5
-    float initPoziciaX=internalKosticka.poziciaX;
-    float initPoziciaY=internalKosticka.poziciaY;
-    float deltaRozsahY=0; // maximalna odchylka od inicializacnej pozicie -> po prekroceni odpocita zivot
+    float initPoziciaX=internalKosticka.pozicia.x;
+    float initPoziciaY=internalKosticka.pozicia.y;
+    float deltaRozsahY=50; // maximalna odchylka od inicializacnej pozicie -> po prekroceni odpocita zivot
     int pozice=0;
     //Na meranie casu pre vypocet polohy podla casu
     static long MoveStartTime=xTaskGetTickCount();
@@ -559,7 +570,8 @@ void Kosticka (void *param)  // bude bezat viac krat, pre kazdu kosticku zvlast
     Serial.println("Bezi task kosticky");
     TaskHandle_t localTask= xTaskGetCurrentTaskHandle();
     // TaskStatus_t xTaskDetails;
-    // vTaskGetInfo(localTask,&xTaskDetails,NULL,eInvalid);
+    
+    // xTaskGetInfo(localTask,&xTaskDetails,NULL,eInvalid);
     Serial.println((int)&localTask);
 
     //Vytvorenie objektu kosticky
@@ -569,8 +581,8 @@ void Kosticka (void *param)  // bude bezat viac krat, pre kazdu kosticku zvlast
       lv_img_set_src(uiKosticka, &ui_img_391577990); //kosticka
       lv_obj_set_width( uiKosticka, LV_SIZE_CONTENT);  /// 1
       lv_obj_set_height( uiKosticka, LV_SIZE_CONTENT);   /// 1
-      lv_obj_set_x( uiKosticka, (int16_t)internalKosticka.poziciaX );
-      lv_obj_set_y( uiKosticka, (int16_t)internalKosticka.poziciaY );
+      lv_obj_set_x( uiKosticka, (int16_t)internalKosticka.pozicia.x );
+      lv_obj_set_y( uiKosticka, (int16_t)internalKosticka.pozicia.y );
       lv_img_set_angle(uiKosticka,(int16_t)internalKosticka.rotace);
       lv_obj_add_flag( uiKosticka, LV_OBJ_FLAG_ADV_HITTEST );   /// Flags
       lv_obj_clear_flag( uiKosticka, LV_OBJ_FLAG_SCROLLABLE );    /// Flags
@@ -585,13 +597,13 @@ void Kosticka (void *param)  // bude bezat viac krat, pre kazdu kosticku zvlast
     KostickaMove(deltaTime,&internalKosticka);
 
     //Ak je kosticka mimo rozsah -> Y pozicia
-    if(internalKosticka.poziciaY-initPoziciaY>deltaRozsahY)
+    if(internalKosticka.pozicia.y-initPoziciaY>deltaRozsahY)
     {
       log_e("Kosticka mimo rozsah, task suspended");
       vTaskSuspend(NULL);
     }
 
-    int deltaX=(int)(internalKosticka.poziciaX-initPoziciaX);
+    int deltaX=(int)(internalKosticka.pozicia.x-initPoziciaX);
     if(deltaX>=0 && deltaX<33)
     {
       if(pozice!=1)
@@ -627,29 +639,43 @@ void Kosticka (void *param)  // bude bezat viac krat, pre kazdu kosticku zvlast
 
 
     if (pdTRUE == xSemaphoreTake(xGuiSemaphore, portMAX_DELAY)) {
-      lv_obj_set_x( uiKosticka, (int16_t)internalKosticka.poziciaX);
-      lv_obj_set_y( uiKosticka, (int16_t)internalKosticka.poziciaY );
+      lv_obj_set_x( uiKosticka, (int16_t)internalKosticka.pozicia.x);
+      lv_obj_set_y( uiKosticka, (int16_t)internalKosticka.pozicia.y );
       lv_img_set_angle(uiKosticka,(int16_t)internalKosticka.rotace);
       xSemaphoreGive(xGuiSemaphore);
     }
-    vTaskDelay(100);
+    vTaskDelay(50);
   }
 }
 
 void AmiGame (void *param)  // Bude spustat a zastavovat tasky kosticiek a ovladat Ami
 {
+  StructPoloha InitPozicie [4]={{19,73},{19,150},{400,73},{400,150}};
+
   Serial.println("Spustil som Ami Task");
-  StructKosticka AmiKosticka = {19,73,5000,0};
+  StructPoloha poloha1=InitPozicie[0];
+  StructKosticka AmiKosticka = {InitPozicie[0],5000,0};
   xTaskCreate(Kosticka,"Kosticka1",4000,&AmiKosticka,1,&taskKosticky[0]);
-  vTaskDelay(500);
-  AmiKosticka = {19,150,100,0};
- // xTaskCreate(Kosticka,"Kosticka2",4000,&AmiKosticka,1,&taskKosticky[1]);
-  vTaskDelay(500);
-  AmiKosticka = {400,150,100,0};
-  //xTaskCreate(Kosticka,"Kosticka3",4000,&AmiKosticka,1,&taskKosticky[1]);
-  vTaskDelay(500);
-  AmiKosticka = {400,73,100,0};
-  //xTaskCreate(Kosticka,"Kosticka4",4000,&AmiKosticka,1,&taskKosticky[1]);
+  // vTaskDelay(500);
+  // AmiKosticka = {InitPozicie[1],5000,0};
+  // xTaskCreate(Kosticka,"Kosticka2",4000,&AmiKosticka,1,&taskKosticky[1]);
+  // vTaskDelay(500);
+  // AmiKosticka = {InitPozicie[2],4000,0};
+  // xTaskCreate(Kosticka,"Kosticka3",4000,&AmiKosticka,1,&taskKosticky[1]);
+  // vTaskDelay(500);
+  // AmiKosticka = {InitPozicie[3],3000,0};
+  // xTaskCreate(Kosticka,"Kosticka4",4000,&AmiKosticka,1,&taskKosticky[1]);
+  eTaskState myStatus;
+  //vTaskGetInfo(taskKosticky[0],&myStatus,NULL,eInvalid);
+  eTaskGetState(taskKosticky[0]);
+  if(myStatus ==eSuspended)
+  {
+    vTaskDelete(&InitPozicie[0]);
+    log_e("Task Restarted");
+    xTaskCreate(Kosticka,"Kosticka1",4000,&AmiKosticka,1,&taskKosticky[0]);
+
+  }
+  
   for(;;)
   {
     vTaskDelay(100);

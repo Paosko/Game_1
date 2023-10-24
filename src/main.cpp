@@ -7,6 +7,7 @@
 #include <math.h>
 
 #define collaps 1 // len aby som vedel collapsnut nejaku cast kodu :D
+#define reprak 22
 
 //FreeRtos Config
 static SemaphoreHandle_t mutex;
@@ -518,6 +519,10 @@ struct StructKosticka
   float rotace;
 };
 
+void Reprak(int tone)
+{
+  
+}
 
 
 void KostickaMove(int DeltaTime, StructKosticka * iKosticka)
@@ -665,20 +670,21 @@ void AmiGame (void *param)  // Bude spustat a zastavovat tasky kosticiek a ovlad
   // vTaskDelay(500);
   // AmiKosticka = {InitPozicie[3],3000,0};
   // xTaskCreate(Kosticka,"Kosticka4",4000,&AmiKosticka,1,&taskKosticky[1]);
-  eTaskState myStatus;
-  //vTaskGetInfo(taskKosticky[0],&myStatus,NULL,eInvalid);
-  eTaskGetState(taskKosticky[0]);
-  if(myStatus ==eSuspended)
-  {
-    vTaskDelete(&InitPozicie[0]);
-    log_e("Task Restarted");
-    xTaskCreate(Kosticka,"Kosticka1",4000,&AmiKosticka,1,&taskKosticky[0]);
-
-  }
+  
   
   for(;;)
   {
-    vTaskDelay(100);
+    vTaskDelay(500);
+    eTaskState myStatus;
+    //vTaskGetInfo(taskKosticky[0],&myStatus,NULL,eInvalid);
+    eTaskGetState(taskKosticky[0]);
+    if(myStatus ==eSuspended)
+    {
+      vTaskDelete(&InitPozicie[0]);
+      log_e("Task Restarted");
+      xTaskCreate(Kosticka,"Kosticka1",4000,&AmiKosticka,1,&taskKosticky[0]);
+
+    }
   }
 }
 

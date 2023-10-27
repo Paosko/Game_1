@@ -578,7 +578,7 @@ return 5;
 
 int createTon(int pozice, int initpozice)
 {
-  return pozice*10+initpozice;
+  return initpozice*2;
 }
 
 void Kosticka (void *param)  // bude bezat viac krat, pre kazdu kosticku zvlast
@@ -642,7 +642,7 @@ void Kosticka (void *param)  // bude bezat viac krat, pre kazdu kosticku zvlast
       vTaskSuspend(NULL);
     }
 
-    int deltaX=(int)(internalKosticka.pozicia.x-initPoziciaX);
+    int deltaX=(int)(abs(internalKosticka.pozicia.x-initPoziciaX));
     if(deltaX>=0 && deltaX<33)
     {
       if(pozice!=1)
@@ -950,9 +950,15 @@ void Reprak(void *param)
     
     if(xQueueReceive(reprakQueue,(void *)&ton,0)==pdTRUE)
     {
-      ledcWrite(0, ton);
-      vTaskDelay(200);
-      ledcWrite(0, 0);
+      log_e("ton:%d",ton);
+      if(ton>8)
+      {
+        log_e("Error ton je vysoky, nastavujem na 0");
+        ton=8;
+      }
+      ledcWriteNote(0,(note_t)ton,ton);
+      vTaskDelay(100);
+      ledcWrite(0,0);
     } 
     vTaskDelay(200);
   }
@@ -966,9 +972,12 @@ void setup()
 
     
   #endif
+    pinMode(reprakPin,OUTPUT);
+    digitalWrite(reprakPin,HIGH);
+    vTaskDelay(500);
+    digitalWrite(reprakPin,LOW);
     
-    
-    ledcSetup(0, 5000, 8);
+    //ledcSetup(0, 5000, 8);
     ledcAttachPin(reprakPin, 0);
 
 
@@ -1004,7 +1013,7 @@ void setup()
     Serial.println(xPortGetFreeHeapSize());
     mutex=xSemaphoreCreateMutex();
 
-    xTaskCreate(Reprak,"Reprak",1024,NULL,1,NULL);  
+    xTaskCreate(Reprak,"Reprak",2024,NULL,1,NULL);  
 
     xTaskCreatePinnedToCore(lv_timer_han,"lv_timer_handler",17000,NULL,3,&taskHandles[1],0);
     Serial.print("Free HEAP after lv_timer_handler:");
@@ -1018,7 +1027,14 @@ void setup()
 
     Serial.println( "Setup done" );
     log_e("setup","kontrola log_e");
-
+/*
+for(int x=0;x<=11;x++)
+{
+    if(xQueueSend(reprakQueue,(void*)&x,10)!=pdTRUE)
+          {Serial.println("Queue sending problem ");}
+          vTaskDelay(1000);
+}   
+*/
 }
 
 void loop()

@@ -54,5 +54,5 @@ dkms.conf
 *.zip
 *.dblite
 *.checksum
-
+*.bin
 **/.pio/build

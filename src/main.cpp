@@ -8,7 +8,7 @@
 #include <EEPROM.h>
 
 #define collaps 1 // len aby som vedel collapsnut nejaku cast kodu :D
-#define reprak 22
+#define reprakPin 22
 
 //////////EEPROM mapa
 #define MemHlasitost 100
@@ -576,6 +576,11 @@ int8_t FindKostickaInitPosition(StructKosticka * ik)
 return 5;
 }
 
+int createTon(int pozice, int initpozice)
+{
+  return pozice*10+initpozice;
+}
+
 void Kosticka (void *param)  // bude bezat viac krat, pre kazdu kosticku zvlast
 {
   #if collaps // Kosticka Init
@@ -596,6 +601,7 @@ void Kosticka (void *param)  // bude bezat viac krat, pre kazdu kosticku zvlast
     float initPoziciaY=internalKosticka.pozicia.y;
     float deltaRozsahY=50; // maximalna odchylka od inicializacnej pozicie -> po prekroceni odpocita zivot
     int pozice=0;
+    int ton=0;
     //Na meranie casu pre vypocet polohy podla casu
     static long MoveStartTime=xTaskGetTickCount();
 
@@ -641,8 +647,11 @@ void Kosticka (void *param)  // bude bezat viac krat, pre kazdu kosticku zvlast
     {
       if(pozice!=1)
       {
-        //Kosticka vstupila do pozice 1
         pozice=1;
+        //Kosticka vstupila do pozice 1
+        ton=createTon(pozice,KostickaInitPozition);
+         if(xQueueSend(reprakQueue,(void*)&ton,10)!=pdTRUE)
+          {Serial.println("Queue sending problem ");}
       }
     }
     if(deltaX>=33 && deltaX<66)
@@ -651,6 +660,9 @@ void Kosticka (void *param)  // bude bezat viac krat, pre kazdu kosticku zvlast
       {
         //Kosticka vstupila do pozice 2
         pozice=2;
+        ton=createTon(pozice,KostickaInitPozition);
+        if(xQueueSend(reprakQueue,(void*)&ton,10)!=pdTRUE)
+        {Serial.println("Queue sending problem ");}
       }
     }
     if(deltaX>=66 && deltaX<99)
@@ -659,6 +671,9 @@ void Kosticka (void *param)  // bude bezat viac krat, pre kazdu kosticku zvlast
       {
         //Kosticka vstupila do pozice 3
         pozice=3;
+        ton=createTon(pozice,KostickaInitPozition);
+        if(xQueueSend(reprakQueue,(void*)&ton,10)!=pdTRUE)
+        {Serial.println("Queue sending problem ");}
       }
     }
     if(deltaX>=100)
@@ -667,6 +682,9 @@ void Kosticka (void *param)  // bude bezat viac krat, pre kazdu kosticku zvlast
       {
         //Kosticka vstupila do pozice 4
         pozice=4;
+        ton=createTon(pozice,KostickaInitPozition);
+        if(xQueueSend(reprakQueue,(void*)&ton,10)!=pdTRUE)
+        {Serial.println("Queue sending problem ");}
       }
     }
 
@@ -924,13 +942,36 @@ void MySerialDebug(void * param)
  }
 }
 
+void Reprak(void *param)
+{
+  static int ton=0;
+  for(;;)
+  {
+    
+    if(xQueueReceive(reprakQueue,(void *)&ton,0)==pdTRUE)
+    {
+      ledcWrite(0, ton);
+      vTaskDelay(200);
+      ledcWrite(0, 0);
+    } 
+    vTaskDelay(200);
+  }
+}
 
 void setup()
 {
   #if wemos_d1_mini32_LVGL_1Pok_SPI_Velky
     pinMode(TFT_BL,OUTPUT);
     digitalWrite(TFT_BL,HIGH);
+
+    
   #endif
+    
+    
+    ledcSetup(0, 5000, 8);
+    ledcAttachPin(reprakPin, 0);
+
+
     Serial.begin( 115200 ); ///* prepare for possible serial debug ///
     Serial.print("CPU FREQUENCY:");
     Serial.println(getCpuFrequencyMhz());
@@ -940,6 +981,7 @@ void setup()
     xGuiSemaphore=xSemaphoreCreateBinary();
     xSemaphoreGive(xGuiSemaphore);
     BleKeyboardQueue=xQueueCreate(10, sizeof(BleKey));
+    reprakQueue=xQueueCreate(10,sizeof(int));
     String LVGL_Arduino = "Hello Arduino! ";
     LVGL_Arduino += String('V') + lv_version_major() + "." + lv_version_minor() + "." + lv_version_patch();
 
@@ -952,7 +994,7 @@ void setup()
     AmiMaxScore=EEPROM.readInt(MemAmiMaxScore);
     BrickMaxScore=EEPROM.readInt(MemBrickMaxScore);
 
-    log_e("Hlasitost:%d, AmiMaxScore:%d BrickMaxScore:%d",hlasitost, AmiMaxScore,BrickMaxScore);
+   // log_e("Hlasitost:%d, AmiMaxScore:%d BrickMaxScore:%d",hlasitost, AmiMaxScore,BrickMaxScore);
     
 
 
@@ -961,6 +1003,8 @@ void setup()
     Serial.print("Free HEAP after MySerialDebug:");
     Serial.println(xPortGetFreeHeapSize());
     mutex=xSemaphoreCreateMutex();
+
+    xTaskCreate(Reprak,"Reprak",1024,NULL,1,NULL);  
 
     xTaskCreatePinnedToCore(lv_timer_han,"lv_timer_handler",17000,NULL,3,&taskHandles[1],0);
     Serial.print("Free HEAP after lv_timer_handler:");

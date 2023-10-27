@@ -16,7 +16,7 @@
 #define MemBrickMaxScore 140
 
 //FreeRtos Config
-static SemaphoreHandle_t mutex;
+static SemaphoreHandle_t MutexScore;
 static SemaphoreHandle_t xGuiSemaphore;
 
 TaskHandle_t taskHandles[10];
@@ -531,9 +531,11 @@ struct StructKosticka
 
 StructPoloha lt={19,73}; //left top
 StructPoloha lb={19,150}; //left bottom
-StructPoloha rt={380,63};   // right top
+StructPoloha rt={365,73};   // right top
 StructPoloha rb={380,140}; //rightbottom
 
+static uint AmiActualScore=0;
+static int AmiZivot=100;
 
 void KostickaMove(int DeltaTime, StructKosticka * iKosticka)
 {
@@ -602,6 +604,7 @@ void Kosticka (void *param)  // bude bezat viac krat, pre kazdu kosticku zvlast
 
     int pozice=0;
     int ton=0;
+   
     //Na meranie casu pre vypocet polohy podla casu
     static long MoveStartTime=xTaskGetTickCount();
 
@@ -647,6 +650,7 @@ void Kosticka (void *param)  // bude bezat viac krat, pre kazdu kosticku zvlast
         ton=createTon(pozice,KostickaInitPozition);
          if(xQueueSend(reprakQueue,(void*)&ton,10)!=pdTRUE)
           {Serial.println("Queue sending problem ");}
+          log_e("pozice:%d",pozice);
       }
     }
     if(deltaX>=10 && deltaX<30)
@@ -658,6 +662,7 @@ void Kosticka (void *param)  // bude bezat viac krat, pre kazdu kosticku zvlast
         ton=createTon(pozice,KostickaInitPozition);
         if(xQueueSend(reprakQueue,(void*)&ton,10)!=pdTRUE)
         {Serial.println("Queue sending problem ");}
+        log_e("pozice:%d",pozice);
       }
     }
     if(deltaX>=30 && deltaX<50)
@@ -669,6 +674,7 @@ void Kosticka (void *param)  // bude bezat viac krat, pre kazdu kosticku zvlast
         ton=createTon(pozice,KostickaInitPozition);
         if(xQueueSend(reprakQueue,(void*)&ton,10)!=pdTRUE)
         {Serial.println("Queue sending problem ");}
+        log_e("pozice:%d",pozice);
       }
     }
      if(deltaX>=50 && deltaX<75)
@@ -680,6 +686,21 @@ void Kosticka (void *param)  // bude bezat viac krat, pre kazdu kosticku zvlast
         ton=createTon(pozice,KostickaInitPozition);
         if(xQueueSend(reprakQueue,(void*)&ton,10)!=pdTRUE)
         {Serial.println("Queue sending problem ");}
+        log_e("pozice:%d",pozice);
+      }
+      if(AmiPosition==KostickaInitPozition)
+      {
+        while (xSemaphoreTake(MutexScore,portMAX_DELAY)!=pdTRUE)
+        {
+          vTaskDelay(5);
+          log_e("Waiting to MutexScore");
+          
+        }
+        AmiActualScore++;
+        xSemaphoreGive(MutexScore);
+        log_e("deleting current Kosticka task -> Pass");
+        lv_obj_del(uiKosticka);
+        vTaskDelete(NULL);
       }
     }
     if(deltaX>=75)
@@ -689,8 +710,16 @@ void Kosticka (void *param)  // bude bezat viac krat, pre kazdu kosticku zvlast
         //Kosticka vstupila do pozice 5
         pozice=5;
         ton=8;
+        log_e("pozice:%d",pozice);
         if(xQueueSend(reprakQueue,(void*)&ton,10)!=pdTRUE)
         {Serial.println("Queue sending problem ");}
+        while (xSemaphoreTake(MutexScore,portMAX_DELAY)!=pdTRUE)
+        {
+          vTaskDelay(5);
+          log_e("Waiting to MutexScore");
+        }
+        AmiZivot=AmiZivot-25;
+        xSemaphoreGive(MutexScore);
 
         lv_obj_del(uiKosticka);
         vTaskDelay(50);
@@ -713,17 +742,18 @@ void Kosticka (void *param)  // bude bezat viac krat, pre kazdu kosticku zvlast
 void AmiGame (void *param)  // Bude spustat a zastavovat tasky kosticiek a ovladat Ami
 {
   StructPoloha InitPozicie [4]={lt,lb,rt,rb};
-
-  Serial.println("Spustil som Ami Task");
   StructPoloha poloha1=InitPozicie[0];
   StructKosticka AmiKosticka = {InitPozicie[0],5000,0};
+  AmiActualScore=0;
+  AmiZivot=100;
+
   xTaskCreate(Kosticka,"Kosticka1",2000,&AmiKosticka,1,&taskKosticky[0]);
   vTaskDelay(500);
   AmiKosticka = {InitPozicie[1],5000,0};
   //xTaskCreate(Kosticka,"Kosticka2",2000,&AmiKosticka,1,&taskKosticky[1]);
   vTaskDelay(500);
   AmiKosticka = {InitPozicie[2],4000,0};
-  xTaskCreate(Kosticka,"Kosticka3",2000,&AmiKosticka,1,&taskKosticky[2]);
+  xTaskCreate(Kosticka,"Kosticka3",10000,&AmiKosticka,1,&taskKosticky[2]);
   //vTaskDelay(500);
   //AmiKosticka = {InitPozicie[3],10000,0};
   //xTaskCreate(Kosticka,"Kosticka4",2000,&AmiKosticka,1,&taskKosticky[3]);
@@ -963,10 +993,10 @@ void Reprak(void *param)
     static int del=100;
     if(xQueueReceive(reprakQueue,(void *)&ton,0)==pdTRUE)
     {
-      log_e("ton:%d",ton);
+      //log_e("ton:%d",ton);
       if(ton>8)
       {
-        log_e("Error ton je vysoky, nastavujem na 0");
+        log_e("Error ton je vysoky, nastavujem na 8");
         ton=8;
       }
       if(ton>=8)
@@ -1032,7 +1062,7 @@ void setup()
     //xTaskCreate(MySerialDebug,"MySerialDebug",1024,NULL,1,&taskHandles[0]);
     Serial.print("Free HEAP after MySerialDebug:");
     Serial.println(xPortGetFreeHeapSize());
-    mutex=xSemaphoreCreateMutex();
+    MutexScore=xSemaphoreCreateMutex();
 
     xTaskCreate(Reprak,"Reprak",2024,NULL,1,NULL);  
 

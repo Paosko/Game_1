@@ -5,9 +5,15 @@
 #include <BLEDevice.h>
 #include <soc/rtc_wdt.h>
 #include <math.h>
+#include <EEPROM.h>
 
 #define collaps 1 // len aby som vedel collapsnut nejaku cast kodu :D
 #define reprak 22
+
+//////////EEPROM mapa
+#define MemHlasitost 100
+#define MemAmiMaxScore 120
+#define MemBrickMaxScore 140
 
 //FreeRtos Config
 static SemaphoreHandle_t mutex;
@@ -22,10 +28,14 @@ String MySerInput;    //Debug output nedorieseny
 
 //Funkcne premenne
 static QueueHandle_t BleKeyboardQueue; // Queue pre Utopiu
+static QueueHandle_t reprakQueue; // Queue pre reprak
+
 lv_indev_t * KeyDriver; // BLE Driver
 lv_indev_t * TouchDriver; // dotykovka
 
-
+static int8_t hlasitost=254;
+static int AmiMaxScore=0;
+static int BrickMaxScore=0;
 
 
 #if collaps ///bluetooth
@@ -519,18 +529,18 @@ struct StructKosticka
   float rotace;
 };
 
-void Reprak(int tone)
-{
-  
-}
+StructPoloha lt={19,73}; //left top
+StructPoloha lb={19,150}; //left bottom
+StructPoloha rt={400,73};   // right top
+StructPoloha rb={400,150}; //rightbottom
 
 
 void KostickaMove(int DeltaTime, StructKosticka * iKosticka)
 {
-  log_e("DeltaTIme:%d",DeltaTime);
+  //log_e("DeltaTIme:%d",DeltaTime);
   float Koef=(float)((float)DeltaTime/1000)*((float)iKosticka->speed/(float)1000);
   //log_e("init X:%d Y:%d",(*x),(*y));
-  log_e("koef:%f",Koef);
+  //log_e("koef:%f",Koef);
   if(iKosticka->pozicia.x<200)
   {
     iKosticka->pozicia.x=iKosticka->pozicia.x+Koef;
@@ -545,8 +555,25 @@ void KostickaMove(int DeltaTime, StructKosticka * iKosticka)
   }
   iKosticka->pozicia.y=iKosticka->pozicia.y+Koef*0.5;
   
-  log_e("out X:%f Y:%f",(iKosticka->pozicia.x),(iKosticka->pozicia.y));
+  //log_e("out X:%f Y:%f",(iKosticka->pozicia.x),(iKosticka->pozicia.y));
 
+}
+
+int8_t FindKostickaInitPosition(StructKosticka * ik)
+{
+  if(ik->pozicia.x==lt.x && ik->pozicia.y == lt.y)
+  {return EnumAmiTopLeft;}
+
+  if(ik->pozicia.x==lb.x && ik->pozicia.y == lb.y)
+  {return EnumAmiBottomLeft;}
+
+  if(ik->pozicia.x==rt.x && ik->pozicia.y == rt.y)
+  {return EnumAmiTopRight;}
+
+  if(ik->pozicia.x==rb.x && ik->pozicia.y == rb.y)
+  {return EnumAmiBottomRight;}
+
+return 5;
 }
 
 void Kosticka (void *param)  // bude bezat viac krat, pre kazdu kosticku zvlast
@@ -557,7 +584,8 @@ void Kosticka (void *param)  // bude bezat viac krat, pre kazdu kosticku zvlast
     StructKosticka internalKosticka;
     internalKosticka.pozicia.x=VstupKosticka->pozicia.x;
     internalKosticka.pozicia.y=VstupKosticka->pozicia.y;
-   
+    int8_t KostickaInitPozition=FindKostickaInitPosition(&internalKosticka);
+   //log_e("Kosticka pozice:%d",KostickaInitPozition);
     //log_e("internalPoloha X:%f, Y:%f",internalKosticka.pozicia.x,internalKosticka.pozicia.y);
     //internalKosticka.poloha=VstupKosticka->poloha;
    
@@ -597,7 +625,7 @@ void Kosticka (void *param)  // bude bezat viac krat, pre kazdu kosticku zvlast
   }
   for(;;)
   {
-    int deltaTime=xTaskGetTickCount()-MoveStartTime;
+    static int deltaTime=xTaskGetTickCount()-MoveStartTime;
     MoveStartTime=xTaskGetTickCount();
     KostickaMove(deltaTime,&internalKosticka);
 
@@ -655,21 +683,22 @@ void Kosticka (void *param)  // bude bezat viac krat, pre kazdu kosticku zvlast
 
 void AmiGame (void *param)  // Bude spustat a zastavovat tasky kosticiek a ovladat Ami
 {
-  StructPoloha InitPozicie [4]={{19,73},{19,150},{400,73},{400,150}};
+  StructPoloha InitPozicie [4]={lt,lb,rt,rb};
 
   Serial.println("Spustil som Ami Task");
   StructPoloha poloha1=InitPozicie[0];
   StructKosticka AmiKosticka = {InitPozicie[0],5000,0};
-  xTaskCreate(Kosticka,"Kosticka1",4000,&AmiKosticka,1,&taskKosticky[0]);
-  // vTaskDelay(500);
-  // AmiKosticka = {InitPozicie[1],5000,0};
-  // xTaskCreate(Kosticka,"Kosticka2",4000,&AmiKosticka,1,&taskKosticky[1]);
-  // vTaskDelay(500);
-  // AmiKosticka = {InitPozicie[2],4000,0};
-  // xTaskCreate(Kosticka,"Kosticka3",4000,&AmiKosticka,1,&taskKosticky[1]);
-  // vTaskDelay(500);
-  // AmiKosticka = {InitPozicie[3],3000,0};
-  // xTaskCreate(Kosticka,"Kosticka4",4000,&AmiKosticka,1,&taskKosticky[1]);
+  xTaskCreate(Kosticka,"Kosticka1",2000,&AmiKosticka,1,&taskKosticky[0]);
+  vTaskDelay(500);
+  AmiKosticka = {InitPozicie[1],5000,0};
+  xTaskCreate(Kosticka,"Kosticka2",2000,&AmiKosticka,1,&taskKosticky[1]);
+  vTaskDelay(500);
+  AmiKosticka = {InitPozicie[2],4000,0};
+  xTaskCreate(Kosticka,"Kosticka3",2000,&AmiKosticka,1,&taskKosticky[2]);
+  vTaskDelay(500);
+  AmiKosticka = {InitPozicie[3],3000,0};
+  xTaskCreate(Kosticka,"Kosticka4",2000,&AmiKosticka,1,&taskKosticky[3]);
+
   
   
   for(;;)
@@ -918,9 +947,17 @@ void setup()
     Serial.println( "I am LVGL_Arduino" );
 
 
+    EEPROM.begin(100);
+    hlasitost=EEPROM.readChar(MemHlasitost);
+    AmiMaxScore=EEPROM.readInt(MemAmiMaxScore);
+    BrickMaxScore=EEPROM.readInt(MemBrickMaxScore);
+
+    log_e("Hlasitost:%d, AmiMaxScore:%d BrickMaxScore:%d",hlasitost, AmiMaxScore,BrickMaxScore);
+    
+
 
     //
-    xTaskCreate(MySerialDebug,"MySerialDebug",1024,NULL,1,&taskHandles[0]);
+    //xTaskCreate(MySerialDebug,"MySerialDebug",1024,NULL,1,&taskHandles[0]);
     Serial.print("Free HEAP after MySerialDebug:");
     Serial.println(xPortGetFreeHeapSize());
     mutex=xSemaphoreCreateMutex();

@@ -52,5 +52,7 @@ Mkfile.old
 dkms.conf
 *.log
 *.zip
+*.dblite
+*.checksum
 
 **/.pio/build

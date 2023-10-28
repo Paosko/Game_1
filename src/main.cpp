@@ -802,9 +802,9 @@ void AmiGame (void *param)  // Bude spustat a zastavovat tasky kosticiek a ovlad
     
    if(LocalAmiZivot>0) // Logika hry
    {
-    static TickType_t currTime=xTaskGetTickCount();
+    TickType_t currTime=xTaskGetTickCount();
     deltaTforK=currTime-GenerovanieKStartTime;
-    log_e("LocalAmiZivot:%d, deltaTime:%d, actualTime:%d, GenkST:%d",LocalAmiZivot,deltaTforK,currTime,GenerovanieKStartTime);
+    //log_e("LocalAmiZivot:%d, deltaTime:%d, actualTime:%d, GenkST:%d",LocalAmiZivot,deltaTforK,currTime,GenerovanieKStartTime);
     
     if(deltaTforK>dalsiaKostickaDelay)
     {

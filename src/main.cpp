@@ -390,10 +390,10 @@ void my_Keyboard_read( lv_indev_drv_t * indev_driver, lv_indev_data_t * data )
         //Serial.println("Joystick bol pusteny");
         data->state = LV_INDEV_STATE_REL;
       }
-      Serial.print("Klavesa:");
-      Serial.print(Klavesa.Key);
-      Serial.print("    Hodnota:");
-      Serial.println(Klavesa.State);
+      // Serial.print("Klavesa:");
+      // Serial.print(Klavesa.Key);
+      // Serial.print("    Hodnota:");
+      // Serial.println(Klavesa.State);
 
   }
 
@@ -677,7 +677,7 @@ void Kosticka (void *param)  // bude bezat viac krat, pre kazdu kosticku zvlast
         log_e("pozice:%d",pozice);
       }
     }
-     if(deltaX>=50 && deltaX<75)
+     if(deltaX>=50 && deltaX<75) // Ami musi chytit
     {
       if(pozice!=4)
       {
@@ -699,11 +699,16 @@ void Kosticka (void *param)  // bude bezat viac krat, pre kazdu kosticku zvlast
         AmiActualScore++;
         xSemaphoreGive(MutexScore);
         log_e("deleting current Kosticka task -> Pass");
-        lv_obj_del(uiKosticka);
+
+        if (pdTRUE == xSemaphoreTake(xGuiSemaphore, portMAX_DELAY)) {  //Vykreslenie pohybu kosticky
+          lv_obj_del(uiKosticka);
+          vTaskDelay(5);
+          xSemaphoreGive(xGuiSemaphore);
+        }
         vTaskDelete(NULL);
       }
     }
-    if(deltaX>=75)
+    if(deltaX>=75) // Ami nechytila, mínus zivot
     {
       if(pozice!=5)
       {
@@ -720,16 +725,18 @@ void Kosticka (void *param)  // bude bezat viac krat, pre kazdu kosticku zvlast
         }
         AmiZivot=AmiZivot-25;
         xSemaphoreGive(MutexScore);
-
-        lv_obj_del(uiKosticka);
-        vTaskDelay(50);
+        if (pdTRUE == xSemaphoreTake(xGuiSemaphore, portMAX_DELAY)) {  //Vykreslenie pohybu kosticky
+          lv_obj_del(uiKosticka);
+          vTaskDelay(5);
+          xSemaphoreGive(xGuiSemaphore);
+        }
         log_e("Kosticka mimo rozsah, task suspended");
-        vTaskSuspend(NULL);
+        vTaskDelete(NULL);
       }
     }
 
 
-    if (pdTRUE == xSemaphoreTake(xGuiSemaphore, portMAX_DELAY)) {
+    if (pdTRUE == xSemaphoreTake(xGuiSemaphore, portMAX_DELAY)) {  //Vykreslenie pohybu kosticky
       lv_obj_set_x( uiKosticka, (int16_t)internalKosticka.pozicia.x);
       lv_obj_set_y( uiKosticka, (int16_t)internalKosticka.pozicia.y );
       lv_img_set_angle(uiKosticka,(int16_t)internalKosticka.rotace);
@@ -746,35 +753,42 @@ void AmiGame (void *param)  // Bude spustat a zastavovat tasky kosticiek a ovlad
   StructKosticka AmiKosticka = {InitPozicie[0],5000,0};
   AmiActualScore=0;
   AmiZivot=100;
-
-  xTaskCreate(Kosticka,"Kosticka1",2000,&AmiKosticka,1,&taskKosticky[0]);
-  vTaskDelay(500);
-  AmiKosticka = {InitPozicie[1],5000,0};
-  //xTaskCreate(Kosticka,"Kosticka2",2000,&AmiKosticka,1,&taskKosticky[1]);
-  vTaskDelay(500);
-  AmiKosticka = {InitPozicie[2],4000,0};
-  xTaskCreate(Kosticka,"Kosticka3",10000,&AmiKosticka,1,&taskKosticky[2]);
-  //vTaskDelay(500);
-  //AmiKosticka = {InitPozicie[3],10000,0};
-  //xTaskCreate(Kosticka,"Kosticka4",2000,&AmiKosticka,1,&taskKosticky[3]);
+  int kostickaSpeed=15000;
+  uint dalsiaKostickaDelay=10000;
+  int RychlostHry=100;
+    xTaskCreate(Kosticka,"Kosticka1",2000,&AmiKosticka,1,&taskKosticky[0]);
+  //  vTaskDelay(500);
+  //  AmiKosticka = {InitPozicie[1],10000,0};
+  //  xTaskCreate(Kosticka,"Kosticka2",2000,&AmiKosticka,1,&taskKosticky[1]);
+  // vTaskDelay(500);
+  // AmiKosticka = {InitPozicie[2],20000,0};
+  // xTaskCreate(Kosticka,"Kosticka3",2000,&AmiKosticka,1,&taskKosticky[2]);
+  // vTaskDelay(500);
+  // AmiKosticka = {InitPozicie[3],10000,0};
+  // xTaskCreate(Kosticka,"Kosticka4",2000,&AmiKosticka,1,&taskKosticky[3]);
 
   
   
   for(;;)
   {
-    vTaskDelay(500);
-    eTaskState myStatus;
-    //vTaskGetInfo(taskKosticky[0],&myStatus,NULL,eInvalid);
-    myStatus=eTaskGetState(taskKosticky[0]);
-    if(myStatus ==eSuspended)
+    vTaskDelay(dalsiaKostickaDelay);
+    for(int8_t x=0;x<10;x++)
     {
-      log_e("Task Restarted");
-      if(taskKosticky[0]!=NULL)
-        vTaskDelete(taskKosticky[0]);
-      log_e("Task Restarted2");
-      xTaskCreate(Kosticka,"Kosticka1",4000,&AmiKosticka,1,&taskKosticky[0]);
-
+      log_e("TaskKosticky x:%d, value:%d",x,taskKosticky[x]);
+      if(taskKosticky[x]==NULL)
+      {
+        int KostickaPositionSeed=random(0,4);
+        log_e("random Cislo:%d",KostickaPositionSeed);
+        AmiKosticka =  {InitPozicie[KostickaPositionSeed],kostickaSpeed,0};
+        const char * TaskName="Kosticka"+x;
+        xTaskCreate(Kosticka,TaskName,3000,&AmiKosticka,1,&taskKosticky[x]);
+        
+        kostickaSpeed=kostickaSpeed+RychlostHry;
+        dalsiaKostickaDelay=dalsiaKostickaDelay+RychlostHry;
+        break;
+      }
     }
+
   }
 }
 
@@ -963,12 +977,26 @@ void MySerialDebug(void * param)
       Serial.println(uxTaskGetStackHighWaterMark(taskHandles[x]));
     }
 
-    for(int x=0;x<2;x++)
+    for(int x=0;x<10;x++)
     { //   static int cnt=0;
-      Serial.print("STACK Kosticky [");
-      Serial.print(x);
-      Serial.print("] left:");
-      Serial.println(uxTaskGetStackHighWaterMark(taskKosticky[x]));
+      if(taskKosticky[x]!=NULL)
+      {
+        eTaskState myStatus;
+        //vTaskGetInfo(taskKosticky[0],&myStatus,NULL,eInvalid);
+        myStatus=eTaskGetState(taskKosticky[x]);
+        if(myStatus ==eDeleted)
+        {
+          Serial.println("task pointer vynulovany!");
+          taskKosticky[x]=NULL;
+          break;
+        }
+
+        uint taskHiwhWaterMark=uxTaskGetStackHighWaterMark(taskKosticky[x]);
+        Serial.print(" STACK Kosticky [");
+        Serial.print(x);
+        Serial.print("] left:");
+        Serial.println(taskHiwhWaterMark);
+      }
     }
 
     Serial.print("Total HEAP: ");
@@ -1059,7 +1087,7 @@ void setup()
 
 
     //
-    //xTaskCreate(MySerialDebug,"MySerialDebug",1024,NULL,1,&taskHandles[0]);
+    xTaskCreate(MySerialDebug,"MySerialDebug",2024,NULL,1,&taskHandles[0]);
     Serial.print("Free HEAP after MySerialDebug:");
     Serial.println(xPortGetFreeHeapSize());
     MutexScore=xSemaphoreCreateMutex();
@@ -1091,7 +1119,7 @@ for(int x=0;x<=11;x++)
 void loop()
 {
     //lv_timer_handler(); /* let the GUI do its work */
-    vTaskDelay(5000);
+    vTaskDelay(50);
     //Serial.print(uxTaskPriorityGet(NULL));
 
 }

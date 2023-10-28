@@ -650,7 +650,7 @@ void Kosticka (void *param)  // bude bezat viac krat, pre kazdu kosticku zvlast
         ton=createTon(pozice,KostickaInitPozition);
          if(xQueueSend(reprakQueue,(void*)&ton,10)!=pdTRUE)
           {Serial.println("Queue sending problem ");}
-          log_e("pozice:%d",pozice);
+          //log_e("pozice:%d",pozice);
       }
     }
     if(deltaX>=10 && deltaX<30)
@@ -662,7 +662,7 @@ void Kosticka (void *param)  // bude bezat viac krat, pre kazdu kosticku zvlast
         ton=createTon(pozice,KostickaInitPozition);
         if(xQueueSend(reprakQueue,(void*)&ton,10)!=pdTRUE)
         {Serial.println("Queue sending problem ");}
-        log_e("pozice:%d",pozice);
+        //log_e("pozice:%d",pozice);
       }
     }
     if(deltaX>=30 && deltaX<50)
@@ -674,7 +674,7 @@ void Kosticka (void *param)  // bude bezat viac krat, pre kazdu kosticku zvlast
         ton=createTon(pozice,KostickaInitPozition);
         if(xQueueSend(reprakQueue,(void*)&ton,10)!=pdTRUE)
         {Serial.println("Queue sending problem ");}
-        log_e("pozice:%d",pozice);
+       // log_e("pozice:%d",pozice);
       }
     }
      if(deltaX>=50 && deltaX<75) // Ami musi chytit
@@ -686,7 +686,7 @@ void Kosticka (void *param)  // bude bezat viac krat, pre kazdu kosticku zvlast
         ton=createTon(pozice,KostickaInitPozition);
         if(xQueueSend(reprakQueue,(void*)&ton,10)!=pdTRUE)
         {Serial.println("Queue sending problem ");}
-        log_e("pozice:%d",pozice);
+        //log_e("pozice:%d",pozice);
       }
       if(AmiPosition==KostickaInitPozition)
       {
@@ -715,7 +715,7 @@ void Kosticka (void *param)  // bude bezat viac krat, pre kazdu kosticku zvlast
         //Kosticka vstupila do pozice 5
         pozice=5;
         ton=8;
-        log_e("pozice:%d",pozice);
+        //log_e("pozice:%d",pozice);
         if(xQueueSend(reprakQueue,(void*)&ton,10)!=pdTRUE)
         {Serial.println("Queue sending problem ");}
         while (xSemaphoreTake(MutexScore,portMAX_DELAY)!=pdTRUE)
@@ -755,39 +755,108 @@ void AmiGame (void *param)  // Bude spustat a zastavovat tasky kosticiek a ovlad
   AmiZivot=100;
   int kostickaSpeed=15000;
   uint dalsiaKostickaDelay=10000;
-  int RychlostHry=100;
-    xTaskCreate(Kosticka,"Kosticka1",2000,&AmiKosticka,1,&taskKosticky[0]);
-  //  vTaskDelay(500);
-  //  AmiKosticka = {InitPozicie[1],10000,0};
-  //  xTaskCreate(Kosticka,"Kosticka2",2000,&AmiKosticka,1,&taskKosticky[1]);
-  // vTaskDelay(500);
-  // AmiKosticka = {InitPozicie[2],20000,0};
-  // xTaskCreate(Kosticka,"Kosticka3",2000,&AmiKosticka,1,&taskKosticky[2]);
-  // vTaskDelay(500);
-  // AmiKosticka = {InitPozicie[3],10000,0};
-  // xTaskCreate(Kosticka,"Kosticka4",2000,&AmiKosticka,1,&taskKosticky[3]);
-
-  
+  int RychlostHry=1000;
+  int LocalAmiZivot,LocalAmiActualScore, PrintAmiZivot,PrintAmiActualScore;
+  static TickType_t GenerovanieKStartTime=0;
+  static TickType_t deltaTforK;
   
   for(;;)
-  {
-    vTaskDelay(dalsiaKostickaDelay);
-    for(int8_t x=0;x<10;x++)
+  { 
+    
+    for (int x=0;x<10;x++)  //Vynulovanie deleted Tasku
     {
-      log_e("TaskKosticky x:%d, value:%d",x,taskKosticky[x]);
-      if(taskKosticky[x]==NULL)
+      if(taskKosticky[x]!=NULL)
       {
-        int KostickaPositionSeed=random(0,4);
-        log_e("random Cislo:%d",KostickaPositionSeed);
-        AmiKosticka =  {InitPozicie[KostickaPositionSeed],kostickaSpeed,0};
-        const char * TaskName="Kosticka"+x;
-        xTaskCreate(Kosticka,TaskName,3000,&AmiKosticka,1,&taskKosticky[x]);
-        
-        kostickaSpeed=kostickaSpeed+RychlostHry;
-        dalsiaKostickaDelay=dalsiaKostickaDelay+RychlostHry;
-        break;
+        eTaskState myStatus;
+        //vTaskGetInfo(taskKosticky[0],&myStatus,NULL,eInvalid);
+        myStatus=eTaskGetState(taskKosticky[x]);
+        if(myStatus ==eDeleted)
+        {
+          Serial.println("task pointer vynulovany!");
+          taskKosticky[x]=NULL;
+          break;
+        }
+      }
+    }  
+    
+    while (xSemaphoreTake(MutexScore,portMAX_DELAY)!=pdTRUE)
+    {
+      vTaskDelay(5);
+      log_e("Waiting to MutexScore");
+    }
+    LocalAmiZivot=AmiZivot;
+    LocalAmiActualScore=AmiActualScore;
+    xSemaphoreGive(MutexScore);
+    
+    if(PrintAmiActualScore!=LocalAmiActualScore)
+   {
+    PrintAmiActualScore=LocalAmiActualScore;
+    //////Vykresli Actual Score
+   }
+
+   if(PrintAmiZivot!=LocalAmiZivot)
+   {
+    PrintAmiZivot=LocalAmiZivot;
+    //////Vykresli Ami Zivot
+   }
+    
+   if(LocalAmiZivot>0) // Logika hry
+   {
+    static TickType_t currTime=xTaskGetTickCount();
+    deltaTforK=currTime-GenerovanieKStartTime;
+    log_e("LocalAmiZivot:%d, deltaTime:%d, actualTime:%d, GenkST:%d",LocalAmiZivot,deltaTforK,currTime,GenerovanieKStartTime);
+    
+    if(deltaTforK>dalsiaKostickaDelay)
+    {
+      GenerovanieKStartTime=currTime;
+      for(int8_t x=0;x<10;x++) // vygenerovanie kosticky
+      {
+        //log_e("TaskKosticky x:%d, value:%d",x,taskKosticky[x]);
+        if(taskKosticky[x]==NULL)
+        {
+          int KostickaPositionSeed=random(0,4);
+          //log_e("random Cislo:%d",KostickaPositionSeed);
+          AmiKosticka =  {InitPozicie[KostickaPositionSeed],kostickaSpeed,0};
+          const char * TaskName="Kosticka"+x;
+          xTaskCreate(Kosticka,TaskName,3000,&AmiKosticka,1,&taskKosticky[x]);
+          kostickaSpeed=kostickaSpeed+RychlostHry;
+          if(dalsiaKostickaDelay>RychlostHry)
+          {
+            dalsiaKostickaDelay=dalsiaKostickaDelay-RychlostHry;
+          }
+          break;
+        }
       }
     }
+   }
+   else
+   {
+    // Zastav kosticky, vynuluj pamat, a vymaz tento task
+    for (int8_t x=0;x<10;x++)  //Vynulovanie kostickovych Taskov
+    {
+      if(taskKosticky[x]!=NULL)
+      {
+        eTaskState myStatus;
+        //vTaskGetInfo(taskKosticky[0],&myStatus,NULL,eInvalid);
+        myStatus=eTaskGetState(taskKosticky[x]);
+        if(myStatus ==eDeleted)
+        {
+          Serial.println("task pointer vynulovany!");
+          taskKosticky[x]=NULL;
+          break;
+        }
+        else
+        {
+          vTaskDelete(taskKosticky[x]);
+          taskKosticky[x]=NULL;
+        }
+      }
+    } 
+    //Zobraz Score Tabulku, Zmen Ami Obrazok
+    //Zastav AmiGame Task
+   }
+
+  vTaskDelay(100);
 
   }
 }
@@ -1029,16 +1098,16 @@ void Reprak(void *param)
       }
       if(ton>=8)
       {
-        del=400;
+        del=300;
       }
       else
-      {del=200;}
+      {del=100;}
 
       ledcWriteNote(0,(note_t)ton,ton);
       vTaskDelay(del);
       ledcWrite(0,0);
     } 
-    vTaskDelay(200);
+    vTaskDelay(50);
   }
 }
 

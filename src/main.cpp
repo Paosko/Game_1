@@ -742,7 +742,7 @@ void Kosticka (void *param)  // bude bezat viac krat, pre kazdu kosticku zvlast
           vTaskDelay(5);
           xSemaphoreGive(xGuiSemaphore);
         }
-        log_e("Kosticka mimo rozsah, task suspended");
+        //log_e("Kosticka mimo rozsah, task suspended");
         vTaskDelete(NULL);
       }
     }
@@ -886,7 +886,12 @@ void AmiGame (void *param)  // Bude spustat a zastavovat tasky kosticiek a ovlad
       }
     } 
     //Zobraz Score Tabulku, Zmen Ami Obrazok
-    if (pdTRUE == xSemaphoreTake(xGuiSemaphore, portMAX_DELAY)) {  
+     while (xSemaphoreTake(xGuiSemaphore, portMAX_DELAY)!=pdTRUE)
+    {
+      vTaskDelay(5);
+      log_e("Waiting to xGuiSemaphore");
+    }
+     
       lv_bar_set_value(ZivotBar,PrintAmiZivot,LV_ANIM_OFF);
     
       lv_img_set_src(ui_Ami,&ui_img_amicatch_png);
@@ -903,7 +908,7 @@ void AmiGame (void *param)  // Bude spustat a zastavovat tasky kosticiek a ovlad
         lv_label_set_text_fmt(ui_NahraneScore,"Prehral/a si :-(\nNajlepsie skore je:%d, Tvoje score:%d",bestScore,AmiActualScore);
       }
       xSemaphoreGive(xGuiSemaphore);
-    }
+      
     vTaskDelete(NULL);
    }
 
@@ -1002,7 +1007,7 @@ void lv_exec(void *param)
   for(;;)
   {
     static bool wasConnected=false;  // priznak ci bol uz pripojeny bluetooth alebo nie
-    vTaskDelay(10);
+    vTaskDelay(100);
 
     if(!connected)
     {
@@ -1068,6 +1073,27 @@ void lv_exec(void *param)
       if (pdTRUE == xSemaphoreTake(xGuiSemaphore, portMAX_DELAY)) {
           xSemaphoreGive(xGuiSemaphore);
       }
+    }
+
+    if(connected && Roller==EnumSetting)
+    {
+      if(Settings==EnumVynulujAmiMaxScore)
+      {
+        EEPROM.writeInt(MemAmiMaxScore,0);
+      }
+
+      if(Settings==EnumVynulujBrickMaxScore)
+      {
+        EEPROM.writeInt(MemBrickMaxScore,0);
+      }
+
+       if (pdTRUE == xSemaphoreTake(xGuiSemaphore, portMAX_DELAY)) {
+        //hlasitost
+        int volume=lv_slider_get_value(ui_VolumeSlider);
+        log_e("volume:%d",volume);
+        xSemaphoreGive(xGuiSemaphore);
+      }
+
     }
   }
 }
@@ -1195,7 +1221,7 @@ void setup()
     Serial.println( "I am LVGL_Arduino" );
 
 
-    EEPROM.begin(100);
+    EEPROM.begin(200);
     hlasitost=EEPROM.readChar(MemHlasitost);
     AmiMaxScore=EEPROM.readInt(MemAmiMaxScore);
     BrickMaxScore=EEPROM.readInt(MemBrickMaxScore);

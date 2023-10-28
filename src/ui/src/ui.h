@@ -35,6 +35,11 @@ enum {
 };
 extern int Roller;
 
+enum{
+  EnumNic, EnumVynulujBrickMaxScore, EnumVynulujAmiMaxScore
+};
+extern int Settings;
+
 
 enum {
   EnumAmiTopLeft,EnumAmiBottomLeft,EnumAmiTopRight,EnumAmiBottomRight

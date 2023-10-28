@@ -6,6 +6,7 @@
 #include "ui.h"
 #include "ui_helpers.h"
 
+
 ///////////////////// VARIABLES ////////////////////
 lv_group_t * MyControlGroup;
 // enum Obrazovka
@@ -14,6 +15,7 @@ lv_group_t * MyControlGroup;
 // };
 
 int Roller=EnumBleVyhladavac; // hovori ktora obrazovka je spustena
+int Settings=EnumNic;
 char AmiPosition; // Pozícia Ami
 
 
@@ -181,13 +183,15 @@ void ui_event_Ami( lv_event_t * e) {
 void ui_event_BrickScoreResetButton( lv_event_t * e) {
     lv_event_code_t event_code = lv_event_get_code(e);lv_obj_t * target = lv_event_get_target(e);
     if ( event_code == LV_EVENT_CLICKED) {
-        ResetScoreBrickFunction( e );
+        Settings=EnumVynulujBrickMaxScore;
+        
     }
 }
 void ui_event_BrickScoreResetButton1( lv_event_t * e) {
     lv_event_code_t event_code = lv_event_get_code(e);lv_obj_t * target = lv_event_get_target(e);
     if ( event_code == LV_EVENT_CLICKED) {
-        ResetScoreWolfFunction( e );
+        Settings=EnumVynulujAmiMaxScore;
+        //ResetScoreWolfFunction( e );
     }
 }
 void ui_event_BackSettingsButton( lv_event_t * e) {

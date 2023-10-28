@@ -5,7 +5,9 @@
 
 #include "ui.h"
 #include <Arduino.h>
-static int16_t x=0,y=0; 
+
+
+
 int16_t AmiPositionRightTopX=40,AmiPositionRightTopY=35; 
 int16_t AmiPositionRightBottomX=40,AmiPositionRightBottomY=95; 
 int16_t AmiPositionLeftTopX=-40,AmiPositionLeftTopY=35; 

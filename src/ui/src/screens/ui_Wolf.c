@@ -34,8 +34,8 @@ lv_obj_set_style_outline_pad(ui_GameArea2, 0, LV_PART_MAIN| LV_STATE_DEFAULT);
 ui_NahraneScore = lv_label_create(ui_GameArea2);
 lv_obj_set_width( ui_NahraneScore, LV_SIZE_CONTENT);  /// 1
 lv_obj_set_height( ui_NahraneScore, LV_SIZE_CONTENT);   /// 1
-lv_obj_set_x( ui_NahraneScore, 0 );
-lv_obj_set_y( ui_NahraneScore, -60 );
+lv_obj_set_x( ui_NahraneScore, 30 );
+lv_obj_set_y( ui_NahraneScore, 40 );
 lv_obj_set_align( ui_NahraneScore, LV_ALIGN_CENTER );
 lv_label_set_text(ui_NahraneScore,"Nahrane Score:");
 ui_Image2 = lv_img_create(ui_GameArea2);

@@ -19,9 +19,11 @@
 static SemaphoreHandle_t MutexScore;
 static SemaphoreHandle_t xGuiSemaphore;
 
+
+#define maxPocetKosticiek 20
 TaskHandle_t taskHandles[10];
 TaskHandle_t taskAmiGame;
-TaskHandle_t taskKosticky [10];
+TaskHandle_t taskKosticky [maxPocetKosticiek];
 
 //Debug part
 String MySerInput;    //Debug output nedorieseny
@@ -432,7 +434,14 @@ void myTOuch_read(lv_indev_drv_t *indev_driver, lv_indev_data_t * data  )
     }
 }
 
-
+void printMaxScore (lv_obj_t *UI, int MaxScore)
+{
+  lv_obj_t *MaxScoreObj=ui_comp_get_child(UI,3); // Maxim. skore
+   if (pdTRUE == xSemaphoreTake(xGuiSemaphore, portMAX_DELAY)) {  //Vykreslenie pohybu kosticky
+      lv_label_set_text_fmt(MaxScoreObj,"Best:%d",MaxScore);
+      xSemaphoreGive(xGuiSemaphore);
+    }
+}
 
 #if collaps // BrickGame
 class GameBall
@@ -537,6 +546,7 @@ StructPoloha rb={380,140}; //rightbottom
 static uint AmiActualScore=0;
 static int AmiZivot=100;
 
+
 void KostickaMove(int DeltaTime, StructKosticka * iKosticka)
 {
   //log_e("DeltaTIme:%d",DeltaTime);
@@ -583,6 +593,7 @@ int createTon(int pozice, int initpozice)
   return initpozice*2;
 }
 
+
 void Kosticka (void *param)  // bude bezat viac krat, pre kazdu kosticku zvlast
 {
   #if collaps // Kosticka Init
@@ -597,6 +608,7 @@ void Kosticka (void *param)  // bude bezat viac krat, pre kazdu kosticku zvlast
     //internalKosticka.poloha=VstupKosticka->poloha;
    
     internalKosticka.speed=VstupKosticka->speed;
+    //log_e("kosticka speed:%d",internalKosticka.speed);
     internalKosticka.rotace=VstupKosticka->rotace;
     // Na vypocet pozicii kosticky -> jednotlive rozdiely znamenaju nejaka pozicia polohy kosticky. asi 4 alebo 5
     float initPoziciaX=internalKosticka.pozicia.x;
@@ -748,6 +760,7 @@ void Kosticka (void *param)  // bude bezat viac krat, pre kazdu kosticku zvlast
 
 void AmiGame (void *param)  // Bude spustat a zastavovat tasky kosticiek a ovladat Ami
 {
+  int bestScore=EEPROM.readInt(MemAmiMaxScore);
   StructPoloha InitPozicie [4]={lt,lb,rt,rb};
   StructPoloha poloha1=InitPozicie[0];
   StructKosticka AmiKosticka = {InitPozicie[0],5000,0};
@@ -759,11 +772,16 @@ void AmiGame (void *param)  // Bude spustat a zastavovat tasky kosticiek a ovlad
   int LocalAmiZivot,LocalAmiActualScore, PrintAmiZivot,PrintAmiActualScore;
   static TickType_t GenerovanieKStartTime=0;
   static TickType_t deltaTforK;
+
+   lv_obj_t *ZivotBar=ui_comp_get_child(ui_StatusPanelWolf,1); // extern na Status bar
+   lv_obj_t *ActScore=ui_comp_get_child(ui_StatusPanelWolf,2); // extern na Status bar
+   printMaxScore(ui_StatusPanelWolf,bestScore);
+
   
   for(;;)
   { 
     
-    for (int x=0;x<10;x++)  //Vynulovanie deleted Tasku
+    for (int x=0;x<maxPocetKosticiek;x++)  //Vynulovanie deleted Tasku
     {
       if(taskKosticky[x]!=NULL)
       {
@@ -774,7 +792,6 @@ void AmiGame (void *param)  // Bude spustat a zastavovat tasky kosticiek a ovlad
         {
           Serial.println("task pointer vynulovany!");
           taskKosticky[x]=NULL;
-          break;
         }
       }
     }  
@@ -791,6 +808,10 @@ void AmiGame (void *param)  // Bude spustat a zastavovat tasky kosticiek a ovlad
     if(PrintAmiActualScore!=LocalAmiActualScore)
    {
     PrintAmiActualScore=LocalAmiActualScore;
+    if (pdTRUE == xSemaphoreTake(xGuiSemaphore, portMAX_DELAY)) {  //Vykreslenie pohybu kosticky
+      lv_label_set_text_fmt(ActScore,"Score:%d",PrintAmiActualScore);
+      xSemaphoreGive(xGuiSemaphore);
+    }
     //////Vykresli Actual Score
    }
 
@@ -798,6 +819,11 @@ void AmiGame (void *param)  // Bude spustat a zastavovat tasky kosticiek a ovlad
    {
     PrintAmiZivot=LocalAmiZivot;
     //////Vykresli Ami Zivot
+    log_e("Vykreslujem Ami Zivot :%d",PrintAmiZivot);
+    if (pdTRUE == xSemaphoreTake(xGuiSemaphore, portMAX_DELAY)) {  //Vykreslenie pohybu kosticky
+      lv_bar_set_value(ZivotBar,PrintAmiZivot,LV_ANIM_OFF);
+      xSemaphoreGive(xGuiSemaphore);
+    }
    }
     
    if(LocalAmiZivot>0) // Logika hry
@@ -816,9 +842,10 @@ void AmiGame (void *param)  // Bude spustat a zastavovat tasky kosticiek a ovlad
         {
           int KostickaPositionSeed=random(0,4);
           //log_e("random Cislo:%d",KostickaPositionSeed);
+          log_e("Kosticka [%d] Speed:%d",x,kostickaSpeed);
           AmiKosticka =  {InitPozicie[KostickaPositionSeed],kostickaSpeed,0};
           const char * TaskName="Kosticka"+x;
-          xTaskCreate(Kosticka,TaskName,3000,&AmiKosticka,1,&taskKosticky[x]);
+          xTaskCreate(Kosticka,TaskName,1500,&AmiKosticka,1,&taskKosticky[x]);
           kostickaSpeed=kostickaSpeed+RychlostHry;
           if(dalsiaKostickaDelay>RychlostHry)
           {
@@ -831,8 +858,14 @@ void AmiGame (void *param)  // Bude spustat a zastavovat tasky kosticiek a ovlad
    }
    else
    {
+    if(bestScore<AmiActualScore)
+    {
+      log_e("Zapisujem Najlepsie skore:%d",AmiActualScore);
+      EEPROM.writeInt(MemAmiMaxScore,AmiActualScore);
+      EEPROM.commit();
+    }
     // Zastav kosticky, vynuluj pamat, a vymaz tento task
-    for (int8_t x=0;x<10;x++)  //Vynulovanie kostickovych Taskov
+    for (int8_t x=0;x<maxPocetKosticiek;x++)  //Vynulovanie kostickovych Taskov
     {
       if(taskKosticky[x]!=NULL)
       {
@@ -853,7 +886,25 @@ void AmiGame (void *param)  // Bude spustat a zastavovat tasky kosticiek a ovlad
       }
     } 
     //Zobraz Score Tabulku, Zmen Ami Obrazok
-    //Zastav AmiGame Task
+    if (pdTRUE == xSemaphoreTake(xGuiSemaphore, portMAX_DELAY)) {  
+      lv_bar_set_value(ZivotBar,PrintAmiZivot,LV_ANIM_OFF);
+    
+      lv_img_set_src(ui_Ami,&ui_img_amicatch_png);
+      lv_obj_set_x( ui_Ami, 8 );
+      lv_obj_set_y( ui_Ami, 73 );
+      lv_img_set_zoom(ui_Ami,150);
+      lv_obj_move_foreground(ui_NahraneScore);
+      if(bestScore<AmiActualScore)
+      {
+        lv_label_set_text_fmt(ui_NahraneScore,"Vitaz/ka!\n najlepsie skore!\n Tvoje Score:%d",AmiActualScore);
+      }
+      else
+      {
+        lv_label_set_text_fmt(ui_NahraneScore,"Prehral/a si :-(\nNajlepsie skore je:%d, Tvoje score:%d",bestScore,AmiActualScore);
+      }
+      xSemaphoreGive(xGuiSemaphore);
+    }
+    vTaskDelete(NULL);
    }
 
   vTaskDelay(100);
@@ -1046,7 +1097,7 @@ void MySerialDebug(void * param)
       Serial.println(uxTaskGetStackHighWaterMark(taskHandles[x]));
     }
 
-    for(int x=0;x<10;x++)
+    for(int x=0;x<maxPocetKosticiek;x++)
     { //   static int cnt=0;
       if(taskKosticky[x]!=NULL)
       {
@@ -1055,9 +1106,7 @@ void MySerialDebug(void * param)
         myStatus=eTaskGetState(taskKosticky[x]);
         if(myStatus ==eDeleted)
         {
-          Serial.println("task pointer vynulovany!");
-          taskKosticky[x]=NULL;
-          break;
+          break; //ked je stack vymazany nerobit nic, AmiTask ho vynuluje
         }
 
         uint taskHiwhWaterMark=uxTaskGetStackHighWaterMark(taskKosticky[x]);
@@ -1156,17 +1205,17 @@ void setup()
 
 
     //
-    xTaskCreate(MySerialDebug,"MySerialDebug",2024,NULL,1,&taskHandles[0]);
+    xTaskCreate(MySerialDebug,"MySerialDebug",1024,NULL,1,&taskHandles[0]);
     Serial.print("Free HEAP after MySerialDebug:");
     Serial.println(xPortGetFreeHeapSize());
     MutexScore=xSemaphoreCreateMutex();
 
     xTaskCreate(Reprak,"Reprak",2024,NULL,1,NULL);  
 
-    xTaskCreatePinnedToCore(lv_timer_han,"lv_timer_handler",17000,NULL,3,&taskHandles[1],0);
+    xTaskCreatePinnedToCore(lv_timer_han,"lv_timer_handler",7000,NULL,3,&taskHandles[1],0);
     Serial.print("Free HEAP after lv_timer_handler:");
     Serial.println(xPortGetFreeHeapSize());
-    xTaskCreatePinnedToCore(lv_exec,"lv_exec",4000,NULL,3,&taskHandles[2],0);
+    xTaskCreatePinnedToCore(lv_exec,"lv_exec",3000,NULL,3,&taskHandles[2],0);
     Serial.print("Free HEAP after lv_exec:");
     Serial.println(xPortGetFreeHeapSize());
     xTaskCreatePinnedToCore(MyBluetooth,"MyBluetooth",3000,NULL,1,&taskHandles[3],1);

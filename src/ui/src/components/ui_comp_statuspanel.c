@@ -25,7 +25,7 @@ lv_obj_set_style_border_opa(cui_StatusPanel, 0, LV_PART_MAIN| LV_STATE_DEFAULT);
 
 lv_obj_t *cui_Bar1;
 cui_Bar1 = lv_bar_create(cui_StatusPanel);
-lv_bar_set_value(cui_Bar1,25,LV_ANIM_OFF);
+lv_bar_set_value(cui_Bar1,100,LV_ANIM_OFF);
 lv_obj_set_width( cui_Bar1, 150);
 lv_obj_set_height( cui_Bar1, 10);
 lv_obj_set_x( cui_Bar1, -120 );

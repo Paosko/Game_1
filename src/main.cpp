@@ -761,6 +761,7 @@ void Kosticka (void *param)  // bude bezat viac krat, pre kazdu kosticku zvlast
 void AmiGame (void *param)  // Bude spustat a zastavovat tasky kosticiek a ovladat Ami
 {
   int bestScore=EEPROM.readInt(MemAmiMaxScore);
+  hlasitost=EEPROM.readInt(MemHlasitost);
   StructPoloha InitPozicie [4]={lt,lb,rt,rb};
   StructPoloha poloha1=InitPozicie[0];
   StructKosticka AmiKosticka = {InitPozicie[0],5000,0};
@@ -1079,12 +1080,16 @@ void lv_exec(void *param)
     {
       if(Settings==EnumVynulujAmiMaxScore)
       {
+        Settings=EnumNic;
         EEPROM.writeInt(MemAmiMaxScore,0);
+        EEPROM.commit();
       }
 
       if(Settings==EnumVynulujBrickMaxScore)
       {
+        Settings=EnumNic;
         EEPROM.writeInt(MemBrickMaxScore,0);
+        EEPROM.commit();
       }
 
        if (pdTRUE == xSemaphoreTake(xGuiSemaphore, portMAX_DELAY)) {
@@ -1092,6 +1097,8 @@ void lv_exec(void *param)
         int volume=lv_slider_get_value(ui_VolumeSlider);
         log_e("volume:%d",volume);
         xSemaphoreGive(xGuiSemaphore);
+        EEPROM.writeInt(MemHlasitost,volume);
+        hlasitost=volume;
       }
 
     }
@@ -1179,6 +1186,7 @@ void Reprak(void *param)
       {del=100;}
 
       ledcWriteNote(0,(note_t)ton,ton);
+      ledcWrite(0,hlasitost);
       vTaskDelay(del);
       ledcWrite(0,0);
     } 
@@ -1222,7 +1230,7 @@ void setup()
 
 
     EEPROM.begin(200);
-    hlasitost=EEPROM.readChar(MemHlasitost);
+    hlasitost=EEPROM.readInt(MemHlasitost);
     AmiMaxScore=EEPROM.readInt(MemAmiMaxScore);
     BrickMaxScore=EEPROM.readInt(MemBrickMaxScore);
 

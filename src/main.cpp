@@ -25,6 +25,7 @@ static SemaphoreHandle_t MutexTasky;
 TaskHandle_t taskHandles[10];
 TaskHandle_t taskAmiGame;
 TaskHandle_t taskKosticky [maxPocetKosticiek];
+TaskHandle_t taskSettings;
 
 //Debug part
 String MySerInput;    //Debug output nedorieseny
@@ -868,34 +869,37 @@ void AmiGame (void *param)  // Bude spustat a zastavovat tasky kosticiek a ovlad
     
     if(deltaTforK>dalsiaKostickaDelay)
     {
-      GenerovanieKStartTime=currTime;
-      for(int8_t x=0;x<maxPocetKosticiek;x++) // vygenerovanie kosticky
+      if(xPortGetFreeHeapSize()>4000)
       {
-        if(pdTRUE==xSemaphoreTake(MutexTasky,portMAX_DELAY))
+        GenerovanieKStartTime=currTime;
+        for(int8_t x=0;x<maxPocetKosticiek;x++) // vygenerovanie kosticky
         {
-          //log_e("TaskKosticky x:%d, value:%d",x,taskKosticky[x]);
-          if(taskKosticky[x]==NULL)
+          if(pdTRUE==xSemaphoreTake(MutexTasky,portMAX_DELAY))
           {
-            int KostickaPositionSeed=random(0,4);
-            //log_e("random Cislo:%d",KostickaPositionSeed);
-            //log_e("Kosticka [%d] Speed:%d",x,kostickaSpeed);
-            AmiKosticka =  {InitPozicie[KostickaPositionSeed],kostickaSpeed,0};
-            const char * TaskName="Kosticka"+x;
-            xTaskCreate(Kosticka,TaskName,1500,&AmiKosticka,1,&taskKosticky[x]);
-            kostickaSpeed=kostickaSpeed+RychlostHry;
-            if(dalsiaKostickaDelay>RychlostHry)
+            //log_e("TaskKosticky x:%d, value:%d",x,taskKosticky[x]);
+            if(taskKosticky[x]==NULL)
             {
-              dalsiaKostickaDelay=dalsiaKostickaDelay-RychlostHry;
+              int KostickaPositionSeed=random(0,4);
+              //log_e("random Cislo:%d",KostickaPositionSeed);
+              //log_e("Kosticka [%d] Speed:%d",x,kostickaSpeed);
+              AmiKosticka =  {InitPozicie[KostickaPositionSeed],kostickaSpeed,0};
+              const char * TaskName="Kosticka"+x;
+              xTaskCreate(Kosticka,TaskName,2000,&AmiKosticka,1,&taskKosticky[x]);
+              kostickaSpeed=kostickaSpeed+RychlostHry;
+              if(dalsiaKostickaDelay>RychlostHry)
+              {
+                dalsiaKostickaDelay=dalsiaKostickaDelay-RychlostHry;
+              }
+              xSemaphoreGive(MutexTasky);
+              break;
             }
-            xSemaphoreGive(MutexTasky);
-            break;
+            else
+            {
+              xSemaphoreGive(MutexTasky);
+            }
           }
-          else
-          {
-            xSemaphoreGive(MutexTasky);
-          }
+          
         }
-        
       }
     }
    }
@@ -1023,6 +1027,52 @@ void initializeAfterConnect()
 
 }
 
+void SettingsMenu (void * param)
+{
+  if (pdTRUE == xSemaphoreTake(xGuiSemaphore, portMAX_DELAY)) {
+      //hlasitost
+      
+      lv_slider_set_value(ui_VolumeSlider,hlasitost,LV_ANIM_OFF);
+      lv_label_set_text_fmt(ui_BrickBestScoreSettingsValue,"Brick Break:%d",BrickMaxScore);
+      lv_label_set_text_fmt(ui_WolfBestScoreSettingsValue,"Ami:%d",AmiMaxScore);
+      xSemaphoreGive(xGuiSemaphore);
+    }
+
+  for(;;)
+    {
+    
+    if(Roller!=EnumSetting)
+    {
+      vTaskDelete(NULL);
+    }
+
+    if(Settings==EnumVynulujAmiMaxScore)
+    {
+      Settings=EnumNic;
+      EEPROM.writeInt(MemAmiMaxScore,0);
+      EEPROM.commit();
+    }
+
+    if(Settings==EnumVynulujBrickMaxScore)
+    {
+      Settings=EnumNic;
+      EEPROM.writeInt(MemBrickMaxScore,0);
+      EEPROM.commit();
+    }
+
+      if (pdTRUE == xSemaphoreTake(xGuiSemaphore, portMAX_DELAY)) {
+      //hlasitost
+      int volume=lv_slider_get_value(ui_VolumeSlider);
+      //log_e("volume:%d",volume);
+      xSemaphoreGive(xGuiSemaphore);
+      EEPROM.writeInt(MemHlasitost,volume);
+      hlasitost=volume;
+    }
+  }
+  vTaskDelay(200);
+
+}
+
 ///Exekucia kodu este neviem na co vsetko ma sluzit
 void lv_exec(void *param)
 {
@@ -1141,28 +1191,8 @@ void lv_exec(void *param)
 
     if(connected && Roller==EnumSetting)
     {
-      if(Settings==EnumVynulujAmiMaxScore)
-      {
-        Settings=EnumNic;
-        EEPROM.writeInt(MemAmiMaxScore,0);
-        EEPROM.commit();
-      }
 
-      if(Settings==EnumVynulujBrickMaxScore)
-      {
-        Settings=EnumNic;
-        EEPROM.writeInt(MemBrickMaxScore,0);
-        EEPROM.commit();
-      }
-
-       if (pdTRUE == xSemaphoreTake(xGuiSemaphore, portMAX_DELAY)) {
-        //hlasitost
-        int volume=lv_slider_get_value(ui_VolumeSlider);
-        //log_e("volume:%d",volume);
-        xSemaphoreGive(xGuiSemaphore);
-        EEPROM.writeInt(MemHlasitost,volume);
-        hlasitost=volume;
-      }
+      xTaskCreate(SettingsMenu,"SettingsMenu",3000,NULL,1,&taskSettings);
 
     }
   }

@@ -18,7 +18,7 @@
 //FreeRtos Config
 static SemaphoreHandle_t MutexScore;
 static SemaphoreHandle_t xGuiSemaphore;
-static portMUX_TYPE MutexForCritical;
+static SemaphoreHandle_t MutexTasky;
 
 
 #define maxPocetKosticiek 20
@@ -647,6 +647,23 @@ void Kosticka (void *param)  // bude bezat viac krat, pre kazdu kosticku zvlast
   }
   for(;;)
   {
+        
+    if(pdTRUE == xSemaphoreTake(MutexTasky,portMAX_DELAY))
+    {
+      if (taskAmiGame==NULL || eTaskGetState(taskAmiGame)==eDeleted )
+      {
+        if (pdTRUE == xSemaphoreTake(xGuiSemaphore, portMAX_DELAY)) {  //Vykreslenie pohybu kosticky
+          lv_obj_del(uiKosticka);
+          vTaskDelay(5);
+          xSemaphoreGive(xGuiSemaphore);
+        }
+        //log_e("Kosticka mimo rozsah, task suspended");
+        vTaskDelete(NULL);
+      }
+    xSemaphoreGive(MutexTasky);
+    }
+    
+
     static int deltaTime=xTaskGetTickCount()-MoveStartTime;
     MoveStartTime=xTaskGetTickCount();
     KostickaMove(deltaTime,&internalKosticka);
@@ -707,11 +724,11 @@ void Kosticka (void *param)  // bude bezat viac krat, pre kazdu kosticku zvlast
         {
           vTaskDelay(5);
           log_e("Waiting to MutexScore");
-          
         }
+
         AmiActualScore++;
         xSemaphoreGive(MutexScore);
-        log_e("deleting current Kosticka task -> Pass");
+        //log_e("deleting current Kosticka task -> Pass");
 
         if (pdTRUE == xSemaphoreTake(xGuiSemaphore, portMAX_DELAY)) {  //Vykreslenie pohybu kosticky
           lv_obj_del(uiKosticka);
@@ -797,16 +814,19 @@ void AmiGame (void *param)  // Bude spustat a zastavovat tasky kosticiek a ovlad
     
     for (int x=0;x<maxPocetKosticiek;x++)  //Vynulovanie deleted Tasku
     {
-      if(taskKosticky[x]!=NULL)
+      if(pdTRUE == xSemaphoreTake(MutexTasky,portMAX_DELAY))
       {
-        eTaskState myStatus;
-        //vTaskGetInfo(taskKosticky[0],&myStatus,NULL,eInvalid);
-        myStatus=eTaskGetState(taskKosticky[x]);
-        if(myStatus ==eDeleted)
+        if(taskKosticky[x]!=NULL)
         {
-          Serial.println("task pointer vynulovany!");
-          taskKosticky[x]=NULL;
+          eTaskState myStatus;
+          myStatus=eTaskGetState(taskKosticky[x]);
+          if(myStatus ==eDeleted)
+          {
+           // Serial.println("task pointer vynulovany!");
+            taskKosticky[x]=NULL;
+          }
         }
+        xSemaphoreGive(MutexTasky);
       }
     }  
     
@@ -849,24 +869,33 @@ void AmiGame (void *param)  // Bude spustat a zastavovat tasky kosticiek a ovlad
     if(deltaTforK>dalsiaKostickaDelay)
     {
       GenerovanieKStartTime=currTime;
-      for(int8_t x=0;x<10;x++) // vygenerovanie kosticky
+      for(int8_t x=0;x<maxPocetKosticiek;x++) // vygenerovanie kosticky
       {
-        //log_e("TaskKosticky x:%d, value:%d",x,taskKosticky[x]);
-        if(taskKosticky[x]==NULL)
+        if(pdTRUE==xSemaphoreTake(MutexTasky,portMAX_DELAY))
         {
-          int KostickaPositionSeed=random(0,4);
-          //log_e("random Cislo:%d",KostickaPositionSeed);
-          log_e("Kosticka [%d] Speed:%d",x,kostickaSpeed);
-          AmiKosticka =  {InitPozicie[KostickaPositionSeed],kostickaSpeed,0};
-          const char * TaskName="Kosticka"+x;
-          xTaskCreate(Kosticka,TaskName,1500,&AmiKosticka,1,&taskKosticky[x]);
-          kostickaSpeed=kostickaSpeed+RychlostHry;
-          if(dalsiaKostickaDelay>RychlostHry)
+          //log_e("TaskKosticky x:%d, value:%d",x,taskKosticky[x]);
+          if(taskKosticky[x]==NULL)
           {
-            dalsiaKostickaDelay=dalsiaKostickaDelay-RychlostHry;
+            int KostickaPositionSeed=random(0,4);
+            //log_e("random Cislo:%d",KostickaPositionSeed);
+            //log_e("Kosticka [%d] Speed:%d",x,kostickaSpeed);
+            AmiKosticka =  {InitPozicie[KostickaPositionSeed],kostickaSpeed,0};
+            const char * TaskName="Kosticka"+x;
+            xTaskCreate(Kosticka,TaskName,1500,&AmiKosticka,1,&taskKosticky[x]);
+            kostickaSpeed=kostickaSpeed+RychlostHry;
+            if(dalsiaKostickaDelay>RychlostHry)
+            {
+              dalsiaKostickaDelay=dalsiaKostickaDelay-RychlostHry;
+            }
+            xSemaphoreGive(MutexTasky);
+            break;
           }
-          break;
+          else
+          {
+            xSemaphoreGive(MutexTasky);
+          }
         }
+        
       }
     }
    }
@@ -880,35 +909,14 @@ void AmiGame (void *param)  // Bude spustat a zastavovat tasky kosticiek a ovlad
     }
     // Zastav kosticky, vynuluj pamat, a vymaz tento task
     
-    /*
-    for (int8_t x=0;x<maxPocetKosticiek;x++)  //Vynulovanie kostickovych Taskov
-    {
-      
-      if(taskKosticky[x]!=NULL)
-      {
-        eTaskState myStatus;
-        //vTaskGetInfo(taskKosticky[0],&myStatus,NULL,eInvalid);
-        myStatus=eTaskGetState(taskKosticky[x]);
-        if(myStatus ==eDeleted)
-        {
-          Serial.println("task pointer vynulovany!");
-          taskKosticky[x]=NULL;
-          break;
-        }
-        else
-        {
-          vTaskDelete(taskKosticky[x]);
-          taskKosticky[x]=NULL;
-        }
-      }
-    } */
+    
     //Zobraz Score Tabulku, Zmen Ami Obrazok
      while (xSemaphoreTake(xGuiSemaphore, portMAX_DELAY)!=pdTRUE)
     {
       vTaskDelay(5);
       log_e("Waiting to xGuiSemaphore");
     }
-     
+      lv_group_remove_all_objs(MyControlGroup);  //Zruš Ble  ovladanie
       lv_bar_set_value(ZivotBar,PrintAmiZivot,LV_ANIM_OFF);
     
       lv_img_set_src(ui_Ami,&ui_img_amicatch_png);
@@ -924,6 +932,7 @@ void AmiGame (void *param)  // Bude spustat a zastavovat tasky kosticiek a ovlad
       {
         lv_label_set_text_fmt(ui_NahraneScore,"Prehral/a si :-(\nNajlepsie skore je:%d, Tvoje score:%d",bestScore,AmiActualScore);
       }
+      
       xSemaphoreGive(xGuiSemaphore);
 
     vTaskDelay(5000);  
@@ -1095,17 +1104,18 @@ void lv_exec(void *param)
 
     if(Roller == EnumAmiHra)
     {
-      if(taskAmiGame!=NULL)
+      if(xSemaphoreTake(MutexTasky,portMAX_DELAY)==pdTRUE)
       {
-        
-        taskENTER_CRITICAL(&MutexForCritical);
-        static eTaskState AktTask;
-        AktTask=eTaskGetState(taskAmiGame);
-        if(AktTask==eDeleted )
+        if(taskAmiGame!=NULL)
         {
-          taskAmiGame=NULL;
+          static eTaskState AktTask;
+          AktTask=eTaskGetState(taskAmiGame);
+          if(AktTask==eDeleted )
+          {
+            taskAmiGame=NULL;
+          }   
+          xSemaphoreGive(MutexTasky);
         }
-        taskEXIT_CRITICAL(&MutexForCritical);
       }
       if(taskAmiGame==NULL)
       {
@@ -1142,7 +1152,7 @@ void lv_exec(void *param)
        if (pdTRUE == xSemaphoreTake(xGuiSemaphore, portMAX_DELAY)) {
         //hlasitost
         int volume=lv_slider_get_value(ui_VolumeSlider);
-        log_e("volume:%d",volume);
+        //log_e("volume:%d",volume);
         xSemaphoreGive(xGuiSemaphore);
         EEPROM.writeInt(MemHlasitost,volume);
         hlasitost=volume;
@@ -1177,36 +1187,45 @@ void MySerialDebug(void * param)
       Serial.println(uxTaskGetStackHighWaterMark(taskHandles[x]));
     }
 
+    
     for(int x=0;x<maxPocetKosticiek;x++)
     { //   static int cnt=0;
-      if(taskKosticky[x]!=NULL)
+      
+      if(pdTRUE==xSemaphoreTake(MutexTasky,portMAX_DELAY))
       {
         eTaskState myStatus;
-        //vTaskGetInfo(taskKosticky[0],&myStatus,NULL,eInvalid);
-        myStatus=eTaskGetState(taskKosticky[x]);
-        if(myStatus ==eDeleted)
-        {
-          break; //ked je stack vymazany nerobit nic, AmiTask ho vynuluje
-        }
+        uint taskHiwhWaterMark;
 
-        uint taskHiwhWaterMark=uxTaskGetStackHighWaterMark(taskKosticky[x]);
-        Serial.print(" STACK Kosticky [");
-        Serial.print(x);
-        Serial.print("] left:");
-        Serial.println(taskHiwhWaterMark);
+        if(taskKosticky[x]!=NULL)
+        {
+          
+
+          myStatus=eTaskGetState(taskKosticky[x]);
+          if(myStatus !=eDeleted)
+            taskHiwhWaterMark=uxTaskGetStackHighWaterMark(taskKosticky[x]);
+        }
+        xSemaphoreGive(MutexTasky);
+
+        if(myStatus !=eDeleted && taskKosticky[x]!=NULL)
+        {
+          Serial.print(" STACK Kosticky [");
+          Serial.print(x);
+          Serial.print("] left:");
+          Serial.println(taskHiwhWaterMark);
+        }
       }
     }
 
-    Serial.print("Total HEAP: ");
-    Serial.println(ESP.getHeapSize());
+  Serial.print("Total HEAP: ");
+  Serial.println(ESP.getHeapSize());
 
-    Serial.print("Free HEAP: ");
-    Serial.println(xPortGetFreeHeapSize());
+  Serial.print("Free HEAP: ");
+  Serial.println(xPortGetFreeHeapSize());
 
-    Serial.print("TOTAL PSRAM: ");
-    Serial.println(ESP.getPsramSize());
-    Serial.print("Free PSRAM: ");
-    Serial.println(ESP.getFreePsram());
+  Serial.print("TOTAL PSRAM: ");
+  Serial.println(ESP.getPsramSize());
+  Serial.print("Free PSRAM: ");
+  Serial.println(ESP.getFreePsram());
 
  }
 }
@@ -1246,13 +1265,9 @@ void setup()
   #if wemos_d1_mini32_LVGL_1Pok_SPI_Velky
     pinMode(TFT_BL,OUTPUT);
     digitalWrite(TFT_BL,HIGH);
-
-    
   #endif
     pinMode(reprakPin,OUTPUT);
-    digitalWrite(reprakPin,HIGH);
-    vTaskDelay(500);
-    digitalWrite(reprakPin,LOW);
+
     
     //ledcSetup(0, 5000, 8);
     ledcAttachPin(reprakPin, 0);
@@ -1266,10 +1281,11 @@ void setup()
     Serial.println(xPortGetFreeHeapSize());
     Serial.printf("1. Mun of tasks:%d\n",uxTaskGetNumberOfTasks());
 
-    vPortCPUInitializeMutex(&MutexForCritical); // Mutex na kritické časti nullovania taskov
-
+    
     xGuiSemaphore=xSemaphoreCreateBinary();
     xSemaphoreGive(xGuiSemaphore);
+    MutexTasky=xSemaphoreCreateBinary();
+    xSemaphoreGive(MutexTasky);
 
 
     BleKeyboardQueue=xQueueCreate(10, sizeof(BleKey));
@@ -1291,7 +1307,7 @@ void setup()
 
 
     //
-    xTaskCreate(MySerialDebug,"MySerialDebug",1024,NULL,1,&taskHandles[0]);
+    xTaskCreate(MySerialDebug,"MySerialDebug",2024,NULL,1,&taskHandles[0]);
     Serial.print("Free HEAP after MySerialDebug:");
     Serial.println(xPortGetFreeHeapSize());
     MutexScore=xSemaphoreCreateMutex();

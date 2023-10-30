@@ -7,6 +7,7 @@
 
 void ui_Menu_screen_init(void)
 {
+Roller=EnumMenu;  // Zda sa ze nefunguje
 ui_Menu = lv_obj_create(NULL);
 lv_obj_clear_flag( ui_Menu, LV_OBJ_FLAG_SCROLLABLE );    /// Flags
 lv_obj_set_style_bg_color(ui_Menu, lv_color_hex(0x4C4E5B), LV_PART_MAIN | LV_STATE_DEFAULT );

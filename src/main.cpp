@@ -18,6 +18,7 @@
 //FreeRtos Config
 static SemaphoreHandle_t MutexScore;
 static SemaphoreHandle_t xGuiSemaphore;
+static portMUX_TYPE MutexForCritical;
 
 
 #define maxPocetKosticiek 20
@@ -777,6 +778,18 @@ void AmiGame (void *param)  // Bude spustat a zastavovat tasky kosticiek a ovlad
    lv_obj_t *ZivotBar=ui_comp_get_child(ui_StatusPanelWolf,1); // extern na Status bar
    lv_obj_t *ActScore=ui_comp_get_child(ui_StatusPanelWolf,2); // extern na Status bar
    printMaxScore(ui_StatusPanelWolf,bestScore);
+   if (pdTRUE == xSemaphoreTake(xGuiSemaphore, portMAX_DELAY)) {  //Vykreslenie pohybu kosticky
+      lv_label_set_text_fmt(ActScore,"Score:%d",AmiActualScore);
+      lv_bar_set_value(ZivotBar,AmiZivot,LV_ANIM_OFF);
+      lv_bar_set_value(ZivotBar,PrintAmiZivot,LV_ANIM_OFF);
+      
+      lv_img_set_src(ui_Ami,&ui_img_ami3_png);
+      lv_obj_set_x( ui_Ami, 8 );
+      lv_obj_set_y( ui_Ami, 73 );
+      lv_img_set_zoom(ui_Ami,256);
+      lv_obj_move_background(ui_NahraneScore);
+      xSemaphoreGive(xGuiSemaphore);
+    }
 
   
   for(;;)
@@ -822,7 +835,7 @@ void AmiGame (void *param)  // Bude spustat a zastavovat tasky kosticiek a ovlad
     //////Vykresli Ami Zivot
     log_e("Vykreslujem Ami Zivot :%d",PrintAmiZivot);
     if (pdTRUE == xSemaphoreTake(xGuiSemaphore, portMAX_DELAY)) {  //Vykreslenie pohybu kosticky
-      lv_bar_set_value(ZivotBar,PrintAmiZivot,LV_ANIM_OFF);
+      lv_bar_set_value(ZivotBar,PrintAmiZivot,LV_ANIM_ON);
       xSemaphoreGive(xGuiSemaphore);
     }
    }
@@ -866,8 +879,11 @@ void AmiGame (void *param)  // Bude spustat a zastavovat tasky kosticiek a ovlad
       EEPROM.commit();
     }
     // Zastav kosticky, vynuluj pamat, a vymaz tento task
+    
+    /*
     for (int8_t x=0;x<maxPocetKosticiek;x++)  //Vynulovanie kostickovych Taskov
     {
+      
       if(taskKosticky[x]!=NULL)
       {
         eTaskState myStatus;
@@ -885,7 +901,7 @@ void AmiGame (void *param)  // Bude spustat a zastavovat tasky kosticiek a ovlad
           taskKosticky[x]=NULL;
         }
       }
-    } 
+    } */
     //Zobraz Score Tabulku, Zmen Ami Obrazok
      while (xSemaphoreTake(xGuiSemaphore, portMAX_DELAY)!=pdTRUE)
     {
@@ -909,7 +925,8 @@ void AmiGame (void *param)  // Bude spustat a zastavovat tasky kosticiek a ovlad
         lv_label_set_text_fmt(ui_NahraneScore,"Prehral/a si :-(\nNajlepsie skore je:%d, Tvoje score:%d",bestScore,AmiActualScore);
       }
       xSemaphoreGive(xGuiSemaphore);
-      
+
+    vTaskDelay(5000);  
     vTaskDelete(NULL);
    }
 
@@ -1076,6 +1093,36 @@ void lv_exec(void *param)
       }
     }
 
+    if(Roller == EnumAmiHra)
+    {
+      if(taskAmiGame!=NULL)
+      {
+        
+        taskENTER_CRITICAL(&MutexForCritical);
+        static eTaskState AktTask;
+        AktTask=eTaskGetState(taskAmiGame);
+        if(AktTask==eDeleted )
+        {
+          taskAmiGame=NULL;
+        }
+        taskEXIT_CRITICAL(&MutexForCritical);
+      }
+      if(taskAmiGame==NULL)
+      {
+        while (xSemaphoreTake(xGuiSemaphore, portMAX_DELAY)!=pdTRUE)
+        {
+          log_e("Waiting to semapthore");
+          vTaskDelay(5);
+        }
+        log_e("z Ami na Menu");
+        lv_group_remove_all_objs(MyControlGroup);
+        _ui_screen_change( &ui_Menu, LV_SCR_LOAD_ANIM_FADE_ON, 500, 0, &ui_Menu_screen_init);
+        xSemaphoreGive(xGuiSemaphore);
+        Roller=EnumMenu;
+      }
+         
+    }
+
     if(connected && Roller==EnumSetting)
     {
       if(Settings==EnumVynulujAmiMaxScore)
@@ -1218,8 +1265,13 @@ void setup()
     Serial.print("init Heap:");
     Serial.println(xPortGetFreeHeapSize());
     Serial.printf("1. Mun of tasks:%d\n",uxTaskGetNumberOfTasks());
+
+    vPortCPUInitializeMutex(&MutexForCritical); // Mutex na kritické časti nullovania taskov
+
     xGuiSemaphore=xSemaphoreCreateBinary();
     xSemaphoreGive(xGuiSemaphore);
+
+
     BleKeyboardQueue=xQueueCreate(10, sizeof(BleKey));
     reprakQueue=xQueueCreate(10,sizeof(int));
     String LVGL_Arduino = "Hello Arduino! ";

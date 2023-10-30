@@ -1104,8 +1104,11 @@ void lv_exec(void *param)
 
     if(Roller == EnumAmiHra)
     {
-      if(xSemaphoreTake(MutexTasky,portMAX_DELAY)==pdTRUE)
+      while (xSemaphoreTake(MutexTasky,(TickType_t)50)!=pdTRUE)
       {
+        log_e("Waiting to MutexTasky");
+        vTaskDelay(5);
+      }
         if(taskAmiGame!=NULL)
         {
           static eTaskState AktTask;
@@ -1114,9 +1117,9 @@ void lv_exec(void *param)
           {
             taskAmiGame=NULL;
           }   
-          xSemaphoreGive(MutexTasky);
         }
-      }
+      xSemaphoreGive(MutexTasky);
+
       if(taskAmiGame==NULL)
       {
         while (xSemaphoreTake(xGuiSemaphore, portMAX_DELAY)!=pdTRUE)
@@ -1127,6 +1130,9 @@ void lv_exec(void *param)
         log_e("z Ami na Menu");
         lv_group_remove_all_objs(MyControlGroup);
         _ui_screen_change( &ui_Menu, LV_SCR_LOAD_ANIM_FADE_ON, 500, 0, &ui_Menu_screen_init);
+        lv_group_add_obj(MyControlGroup,ui_PanelBlrickGame);
+        lv_group_add_obj(MyControlGroup,ui_PanelWolfGame);
+        lv_group_add_obj(MyControlGroup,ui_SettingsButton);
         xSemaphoreGive(xGuiSemaphore);
         Roller=EnumMenu;
       }
@@ -1198,8 +1204,6 @@ void MySerialDebug(void * param)
 
         if(taskKosticky[x]!=NULL)
         {
-          
-
           myStatus=eTaskGetState(taskKosticky[x]);
           if(myStatus !=eDeleted)
             taskHiwhWaterMark=uxTaskGetStackHighWaterMark(taskKosticky[x]);
@@ -1307,7 +1311,7 @@ void setup()
 
 
     //
-    xTaskCreate(MySerialDebug,"MySerialDebug",2024,NULL,1,&taskHandles[0]);
+    //xTaskCreate(MySerialDebug,"MySerialDebug",2024,NULL,1,&taskHandles[0]);
     Serial.print("Free HEAP after MySerialDebug:");
     Serial.println(xPortGetFreeHeapSize());
     MutexScore=xSemaphoreCreateMutex();

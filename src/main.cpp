@@ -1036,6 +1036,13 @@ void SettingsMenu (void * param)
     log_e("waiting to xGuiSemaphore mutex");
     vTaskDelay(5);
   }
+  lv_group_remove_all_objs(MyControlGroup);
+    lv_group_add_obj(MyControlGroup,ui_VolumeSlider); 
+    lv_group_add_obj(MyControlGroup,ui_BrickScoreResetButton);
+    lv_group_add_obj(MyControlGroup,ui_BrickScoreResetButton1);
+    lv_group_add_obj(MyControlGroup,ui_BackSettingsButton);
+    
+
   lv_slider_set_value(ui_VolumeSlider,hlasitost,LV_ANIM_OFF);
   lv_label_set_text_fmt(ui_BrickBestScoreSettingsValue,"Brick Break:%d",BrickMaxScore);
   lv_label_set_text_fmt(ui_WolfBestScoreSettingsValue,"Ami:%d",AmiMaxScore);

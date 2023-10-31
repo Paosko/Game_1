@@ -184,6 +184,8 @@ void ui_event_BrickScoreResetButton( lv_event_t * e) {
     lv_event_code_t event_code = lv_event_get_code(e);lv_obj_t * target = lv_event_get_target(e);
     if ( event_code == LV_EVENT_CLICKED) {
         Settings=EnumVynulujBrickMaxScore;
+        lv_label_set_text_fmt(ui_BrickBestScoreSettingsValue,"Brick Break:0");
+      
         
     }
 }
@@ -191,12 +193,17 @@ void ui_event_BrickScoreResetButton1( lv_event_t * e) {
     lv_event_code_t event_code = lv_event_get_code(e);lv_obj_t * target = lv_event_get_target(e);
     if ( event_code == LV_EVENT_CLICKED) {
         Settings=EnumVynulujAmiMaxScore;
+        lv_label_set_text_fmt(ui_WolfBestScoreSettingsValue,"Ami:0");
         //ResetScoreWolfFunction( e );
     }
 }
 void ui_event_BackSettingsButton( lv_event_t * e) {
     lv_event_code_t event_code = lv_event_get_code(e);lv_obj_t * target = lv_event_get_target(e);
     if ( event_code == LV_EVENT_CLICKED) {
+        lv_group_remove_all_objs(MyControlGroup);
+        lv_group_add_obj(MyControlGroup,ui_PanelBlrickGame);
+        lv_group_add_obj(MyControlGroup,ui_PanelWolfGame);
+        lv_group_add_obj(MyControlGroup,ui_SettingsButton);
         _ui_screen_change( &ui_Menu, LV_SCR_LOAD_ANIM_NONE, 500, 0, &ui_Menu_screen_init);
     }
 }

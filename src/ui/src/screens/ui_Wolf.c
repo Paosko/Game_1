@@ -50,7 +50,7 @@ ui_Ami = lv_img_create(ui_GameArea2);
 lv_img_set_src(ui_Ami, &ui_img_ami3_png);
 lv_obj_set_width( ui_Ami, LV_SIZE_CONTENT);  /// 1
 lv_obj_set_height( ui_Ami, LV_SIZE_CONTENT);   /// 1
-lv_obj_set_x( ui_Ami, 8 );
+lv_obj_set_x( ui_Ami, 19 );
 lv_obj_set_y( ui_Ami, 73 );
 lv_obj_set_align( ui_Ami, LV_ALIGN_CENTER );
 lv_obj_add_flag( ui_Ami, LV_OBJ_FLAG_ADV_HITTEST );   /// Flags

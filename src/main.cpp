@@ -1029,14 +1029,17 @@ void initializeAfterConnect()
 
 void SettingsMenu (void * param)
 {
-  if (pdTRUE == xSemaphoreTake(xGuiSemaphore, portMAX_DELAY)) {
-      //hlasitost
-      
-      lv_slider_set_value(ui_VolumeSlider,hlasitost,LV_ANIM_OFF);
-      lv_label_set_text_fmt(ui_BrickBestScoreSettingsValue,"Brick Break:%d",BrickMaxScore);
-      lv_label_set_text_fmt(ui_WolfBestScoreSettingsValue,"Ami:%d",AmiMaxScore);
-      xSemaphoreGive(xGuiSemaphore);
-    }
+  BrickMaxScore=EEPROM.readInt(MemBrickMaxScore);
+  AmiMaxScore=EEPROM.readInt(MemAmiMaxScore);
+  while( xSemaphoreTake(xGuiSemaphore, portMAX_DELAY)!=pdTRUE)
+  {
+    log_e("waiting to xGuiSemaphore mutex");
+    vTaskDelay(5);
+  }
+  lv_slider_set_value(ui_VolumeSlider,hlasitost,LV_ANIM_OFF);
+  lv_label_set_text_fmt(ui_BrickBestScoreSettingsValue,"Brick Break:%d",BrickMaxScore);
+  lv_label_set_text_fmt(ui_WolfBestScoreSettingsValue,"Ami:%d",AmiMaxScore);
+  xSemaphoreGive(xGuiSemaphore);
 
   for(;;)
     {

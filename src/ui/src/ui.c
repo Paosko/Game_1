@@ -124,9 +124,9 @@ void ui_event_Menu( lv_event_t * e) {
 void ui_event_PanelBlrickGame( lv_event_t * e) {
     lv_event_code_t event_code = lv_event_get_code(e);lv_obj_t * target = lv_event_get_target(e);
     if ( event_code == LV_EVENT_CLICKED) {
-        lv_group_remove_all_objs(MyControlGroup);
-        _ui_screen_change( &ui_BrickBall, LV_SCR_LOAD_ANIM_FADE_ON, 500, 0, &ui_BrickBall_screen_init);
-        Roller=EnumBrickStart;
+        //lv_group_remove_all_objs(MyControlGroup);
+        //_ui_screen_change( &ui_BrickBall, LV_SCR_LOAD_ANIM_FADE_ON, 500, 0, &ui_BrickBall_screen_init);
+        //Roller=EnumBrickStart;
     }
 }
 void ui_event_PanelWolfGame( lv_event_t * e) {

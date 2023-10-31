@@ -27,7 +27,7 @@ lv_obj_set_align( ui_PanelBlrickGame, LV_ALIGN_CENTER );
 lv_obj_clear_flag( ui_PanelBlrickGame, LV_OBJ_FLAG_SCROLLABLE );    /// Flags
 lv_obj_set_style_bg_img_src( ui_PanelBlrickGame, &ui_img_brickball_png, LV_PART_MAIN | LV_STATE_DEFAULT );
 lv_obj_set_style_bg_img_src( ui_PanelBlrickGame, &ui_img_brickball_png, LV_PART_MAIN | LV_STATE_FOCUSED );
-lv_obj_set_style_shadow_color(ui_PanelBlrickGame, lv_color_hex(0x00FF08), LV_PART_MAIN | LV_STATE_FOCUSED );
+lv_obj_set_style_shadow_color(ui_PanelBlrickGame, lv_color_hex(0x666666), LV_PART_MAIN | LV_STATE_FOCUSED );
 lv_obj_set_style_shadow_opa(ui_PanelBlrickGame, 255, LV_PART_MAIN| LV_STATE_FOCUSED);
 lv_obj_set_style_shadow_width(ui_PanelBlrickGame, 25, LV_PART_MAIN| LV_STATE_FOCUSED);
 lv_obj_set_style_shadow_spread(ui_PanelBlrickGame, 15, LV_PART_MAIN| LV_STATE_FOCUSED);

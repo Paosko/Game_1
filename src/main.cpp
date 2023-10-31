@@ -551,9 +551,13 @@ static int AmiZivot=100;
 
 void KostickaMove(int DeltaTime, StructKosticka * iKosticka)
 {
+  
   //log_e("DeltaTIme:%d",DeltaTime);
+ /* if(DeltaTime<50)
+  {
+    DeltaTime=80;
+  }*/
   float Koef=(float)((float)DeltaTime/1000)*((float)iKosticka->speed/(float)1000);
-  //log_e("init X:%d Y:%d",(*x),(*y));
   //log_e("koef:%f",Koef);
   if(iKosticka->pozicia.x<200)
   {
@@ -620,11 +624,12 @@ void Kosticka (void *param)  // bude bezat viac krat, pre kazdu kosticku zvlast
     int ton=0;
    
     //Na meranie casu pre vypocet polohy podla casu
-    static long MoveStartTime=xTaskGetTickCount();
+    TickType_t MoveStartTime=xTaskGetTickCount();
 
 
     Serial.println("Bezi task kosticky");
     TaskHandle_t localTask= xTaskGetCurrentTaskHandle();
+    
     // TaskStatus_t xTaskDetails;
     
     // xTaskGetInfo(localTask,&xTaskDetails,NULL,eInvalid);
@@ -665,9 +670,12 @@ void Kosticka (void *param)  // bude bezat viac krat, pre kazdu kosticku zvlast
     }
     
 
-    static int deltaTime=xTaskGetTickCount()-MoveStartTime;
+    int deltaTime=xTaskGetTickCount()-MoveStartTime;
+    TickType_t
     MoveStartTime=xTaskGetTickCount();
+    //log_e("init X:%f Y:%f",(internalKosticka.pozicia.x),(internalKosticka.pozicia.y));
     KostickaMove(deltaTime,&internalKosticka);
+    //log_e("OUT X:%f Y:%f",(internalKosticka.pozicia.x),(internalKosticka.pozicia.y));
 
 
     int deltaX=(int)(abs(internalKosticka.pozicia.x-initPoziciaX));
@@ -774,6 +782,7 @@ void Kosticka (void *param)  // bude bezat viac krat, pre kazdu kosticku zvlast
       xSemaphoreGive(xGuiSemaphore);
     }
     vTaskDelay(50);
+    
   }
 }
 
